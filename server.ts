@@ -3,6 +3,7 @@ import { generateText, generateObject } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { error } from "console";
 
 const PORT = 3001;
 
@@ -98,16 +99,128 @@ async function handleGenerate(req: Request): Promise<Response> {
         return Response.json({ error: `Ollama failed: ${errorText}` }, { status: 500 });
       }
 
+
       const data = await response.json();
-      const rawText = data.message?.content || "";
-      
-      // Parse the JSON
-      try {
-        const schema = JSON.parse(rawText);
-        return Response.json({ schema, rawResponse: rawText });
-      } catch (err) {
-        return Response.json({ error: "Failed to parse Ollama JSON response", rawResponse: rawText }, { status: 500 });
+      let rawText = data.message?.content || "";
+
+      // Clean rawText
+      rawText = rawText.trim();
+      if (rawText.startsWith("```json")) {
+        rawText = rawText.substring(7, rawText.length - 3).trim();
+      } else if (rawText.startsWith("```")) {
+        rawText = rawText.substring(3, rawText.length - 3).trim();
       }
+
+      // Repair incomplete/truncated JSON structures from the local model
+      let parsedSchema: any = null;
+      let repairAttempts = [
+        rawText,
+        // Attempt 1: Add missing array/object delimiters if truncated inside table list
+        rawText + '\n          ]\n        }\n      ]\n    }\n  ],\n  "relations": []\n}',
+        rawText + '\n      ]\n    }\n  ],\n  "relations": []\n}',
+        rawText + '\n    }\n  ],\n  "relations": []\n}',
+        rawText + '\n  ],\n  "relations": []\n}',
+        rawText + '\n}',
+        rawText + ']}',
+      ];
+
+      // Dynamic JSON recovery function
+      const tryBalancedRepair = (jsonStr: string): string => {
+        let braces = 0;
+        let brackets = 0;
+        let inString = false;
+        let escaped = false;
+        
+        for (let i = 0; i < jsonStr.length; i++) {
+          const char = jsonStr[i];
+          if (escaped) {
+            escaped = false;
+            continue;
+          }
+          if (char === '\\') {
+            escaped = true;
+            continue;
+          }
+          if (char === '"') {
+            inString = !inString;
+            continue;
+          }
+          if (!inString) {
+            if (char === '{') braces++;
+            if (char === '}') braces--;
+            if (char === '[') brackets++;
+            if (char === ']') brackets--;
+          }
+        }
+        
+        let repaired = jsonStr;
+        if (inString) repaired += '"';
+        
+        while (brackets > 0) {
+          repaired += ']';
+          brackets--;
+        }
+        while (braces > 0) {
+          repaired += '}';
+          braces--;
+        }
+        return repaired;
+      };
+
+      repairAttempts.push(tryBalancedRepair(rawText));
+
+      for (const attempt of repairAttempts) {
+        try {
+          const candidate = JSON.parse(attempt);
+          if (candidate && (candidate.tables || Array.isArray(candidate))) {
+            parsedSchema = candidate;
+            break;
+          }
+        } catch (e) {
+          // keep trying
+        }
+      }
+
+      // If all structured parses fail, execute a fallback regex parser to capture what we can
+      if (!parsedSchema) {
+        try {
+          const tables: any[] = [];
+          const tableMatches = rawText.matchAll(/"name":\s*"([^"]+)"[\s\S]*?"columns":\s*\[([\s\S]*?)\]/g);
+          for (const match of tableMatches) {
+            const tableName = match[1];
+            const colsText = match[2];
+            const columns: any[] = [];
+            const colMatches = colsText.matchAll(/\{[\s\S]*?"name":\s*"([^"]+)"[\s\S]*?"type":\s*"([^"]+)"[\s\S]*?\}/g);
+            for (const colMatch of colMatches) {
+              columns.push({
+                name: colMatch[1],
+                type: colMatch[2],
+                primaryKey: colMatch[0].includes('"primaryKey": true'),
+                notNull: colMatch[0].includes('"notNull": true'),
+                unique: colMatch[0].includes('"unique": true'),
+                isIndex: colMatch[0].includes('"isIndex": true')
+              });
+            }
+            tables.push({ name: tableName, columns });
+          }
+          if (tables.length > 0) {
+            parsedSchema = { tables, relations: [] };
+          }
+        } catch (e) {
+          // fallback failed
+        }
+      }
+
+      if (!parsedSchema) {
+        return Response.json({ error: "Failed to parse or repair incomplete local LLM JSON response", rawResponse: rawText }, { status: 500 });
+      }
+
+      const finalSchema = {
+        tables: Array.isArray(parsedSchema.tables) ? parsedSchema.tables : [],
+        relations: Array.isArray(parsedSchema.relations) ? parsedSchema.relations : []
+      };
+
+      return Response.json({ schema: finalSchema, rawResponse: rawText });
     } else {
       // Use Vercel AI SDK
       const modelInstance = getModelInstance(provider, apiKey, model);
