@@ -13,7 +13,6 @@ import type {
   NodeChange,
   EdgeChange
 } from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
 
 import { Database, Plus, Code, Share2, Trash2, Info } from 'lucide-react';
 import type { DatabaseSchema, Table, Column, Relation, LLMConfig } from './types/schema';
