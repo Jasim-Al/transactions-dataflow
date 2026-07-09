@@ -284,8 +284,52 @@ export default function App() {
   const onSchemaGenerated = useCallback((newSchema: DatabaseSchema) => {
     if (!newSchema || !newSchema.tables) return;
 
+    // Create a deep copy of tables so we can mutate columns if referenced columns are missing
+    const tempTables: Table[] = JSON.parse(JSON.stringify(newSchema.tables));
+
+    // Ensure all referenced relation columns exist in tables
+    (newSchema.relations || []).forEach(rel => {
+      const normalize = (s: string) => s.toLowerCase().replace(/_/g, '').replace(/-/g, '');
+      const normFromTable = normalize(rel.fromTable);
+      const normToTable = normalize(rel.toTable);
+
+      // Find fromTable
+      const fromTableObj = tempTables.find(t => normalize(t.name) === normFromTable || normalize(t.id || '') === normFromTable);
+      if (fromTableObj) {
+        const colExists = fromTableObj.columns.some(c => normalize(c.name) === normalize(rel.fromColumn) || normalize(c.id || '') === normalize(rel.fromColumn));
+        if (!colExists) {
+          fromTableObj.columns.push({
+            id: `col_${Date.now()}_fk_${rel.fromColumn}`,
+            name: rel.fromColumn,
+            type: 'integer',
+            primaryKey: false,
+            notNull: true,
+            unique: false,
+            isIndex: true
+          });
+        }
+      }
+
+      // Find toTable
+      const toTableObj = tempTables.find(t => normalize(t.name) === normToTable || normalize(t.id || '') === normToTable);
+      if (toTableObj) {
+        const colExists = toTableObj.columns.some(c => normalize(c.name) === normalize(rel.toColumn) || normalize(c.id || '') === normalize(rel.toColumn));
+        if (!colExists) {
+          toTableObj.columns.push({
+            id: `col_${Date.now()}_pk_${rel.toColumn}`,
+            name: rel.toColumn,
+            type: rel.toColumn === 'id' ? 'serial' : 'integer',
+            primaryKey: rel.toColumn === 'id',
+            notNull: true,
+            unique: rel.toColumn === 'id',
+            isIndex: false
+          });
+        }
+      }
+    });
+
     // Map tables to ReactFlow nodes
-    const flowNodes = newSchema.tables.map((t, idx) => {
+    const flowNodes = tempTables.map((t, idx) => {
       const tableId = t.id || t.name || `table_${idx}`;
       const tableName = t.name || tableId;
 
@@ -325,10 +369,10 @@ export default function App() {
     const flowEdges = (newSchema.relations || []).map(rel => {
       const normalize = (s: string) => s.toLowerCase().replace(/_/g, '').replace(/-/g, '');
       
-      const fromTableObj = newSchema.tables.find(t => 
+      const fromTableObj = tempTables.find(t => 
         normalize(t.name) === normalize(rel.fromTable) || normalize(t.id || '') === normalize(rel.fromTable)
       );
-      const toTableObj = newSchema.tables.find(t => 
+      const toTableObj = tempTables.find(t => 
         normalize(t.name) === normalize(rel.toTable) || normalize(t.id || '') === normalize(rel.toTable)
       );
       
