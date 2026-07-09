@@ -16,6 +16,7 @@ interface TableNodeProps {
 
 export const TableNode: React.FC<TableNodeProps> = ({ data }) => {
   const { table, onRenameTable, onDeleteTable, onAddColumn, onUpdateColumn, onDeleteColumn } = data;
+  console.log("TableNode render:", table?.name, table?.columns);
   const [isEditingName, setIsEditingName] = useState(false);
   const [tableNameInput, setTableNameInput] = useState(table.name);
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null);

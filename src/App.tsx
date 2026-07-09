@@ -458,6 +458,8 @@ export default function App() {
     setSelectedEdgeId(null);
   };
 
+  console.log("App render, flowNodes:", flowNodes, "flowEdges:", flowEdges);
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground flex-col">
       {/* Top Navbar */}
