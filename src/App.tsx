@@ -3,19 +3,19 @@ import {
   ReactFlow, 
   Background, 
   Controls, 
-  BackgroundVariant,
+  BackgroundVariant
+} from '@xyflow/react';
+import type {
   Connection,
   Edge,
   Node,
-  applyNodeChanges,
-  applyEdgeChanges,
   NodeChange,
   EdgeChange
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { Sparkles, Database, Plus, Code, Download, Share2, Trash2, Info, Moon, Sun } from 'lucide-react';
-import { DatabaseSchema, Table, Column, Relation, LLMConfig } from './types/schema';
+import { Database, Plus, Code, Share2, Trash2, Info } from 'lucide-react';
+import type { DatabaseSchema, Table, Column, Relation, LLMConfig } from './types/schema';
 import { TableNode } from './components/TableNode';
 import { SchemaGeneratorPanel } from './components/SchemaGeneratorPanel';
 import { ExportModal } from './components/ExportModal';
@@ -320,14 +320,14 @@ export default function App() {
       position: { x: table.x ?? 100, y: table.y ?? 100 },
       data: {
         table,
-        onRenameTable,
-        onDeleteTable,
-        onAddColumn,
-        onUpdateColumn,
-        onDeleteColumn,
+        onRenameTable: handleRenameTable,
+        onDeleteTable: handleDeleteTable,
+        onAddColumn: handleAddColumn,
+        onUpdateColumn: handleUpdateColumn,
+        onDeleteColumn: handleDeleteColumn,
       },
     }));
-  }, [schema, onRenameTable, onDeleteTable, onAddColumn, onUpdateColumn, onDeleteColumn]);
+  }, [schema, handleRenameTable, handleDeleteTable, handleAddColumn, handleUpdateColumn, handleDeleteColumn]);
 
   const flowEdges = useMemo<Edge[]>(() => {
     return schema.relations.map(rel => {
@@ -375,7 +375,7 @@ export default function App() {
     });
   }, [schema, selectedEdgeId]);
 
-  const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
+  const onEdgeClick = useCallback((_event: React.MouseEvent, edge: Edge) => {
     setSelectedEdgeId(edge.id === selectedEdgeId ? null : edge.id);
   }, [selectedEdgeId]);
 

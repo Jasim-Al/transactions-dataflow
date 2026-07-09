@@ -1,4 +1,4 @@
-import { DatabaseSchema, Table, Column, Relation } from '../types/schema';
+import type { DatabaseSchema } from '../types/schema';
 
 // Helper to convert table names (e.g. user_profiles) to camelCase variable names (e.g. userProfiles)
 export function toCamelCase(str: string): string {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Copy, Check, Download, ArrowRight, Code, Terminal, Sparkles } from 'lucide-react';
-import { LLMConfig } from '../types/schema';
+import type { LLMConfig } from '../types/schema';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -20,7 +20,6 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, drizz
 
   const [loading, setLoading] = useState(false);
   const [translatedCode, setTranslatedCode] = useState<string | null>(null);
-  const [promptUsed, setPromptUsed] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -47,7 +46,6 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, drizz
     setLoading(true);
     setError(null);
     setTranslatedCode(null);
-    setPromptUsed(null);
 
     try {
       const response = await fetch('/api/schema/translate', {
@@ -72,7 +70,6 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, drizz
       }
 
       setTranslatedCode(data.translatedCode);
-      setPromptUsed(data.promptUsed);
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Failed to perform conversion. Check if your LLM settings are correct.');

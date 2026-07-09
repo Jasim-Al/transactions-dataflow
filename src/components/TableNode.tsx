@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { Trash2, Plus, Edit2, Check, Settings, X } from 'lucide-react';
-import { Table, Column } from '../types/schema';
+import { Trash2, Plus, Edit2, Check, Settings } from 'lucide-react';
+import type { Table, Column } from '../types/schema';
 
 interface TableNodeProps {
   data: {

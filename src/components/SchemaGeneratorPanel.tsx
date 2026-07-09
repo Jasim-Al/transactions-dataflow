@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Settings, Sparkles, ChevronDown, ChevronUp, AlertCircle, Key, Cpu, HelpCircle } from 'lucide-react';
-import { LLMConfig, DatabaseSchema } from '../types/schema';
+import { Settings, Sparkles, AlertCircle, Key, Cpu, HelpCircle } from 'lucide-react';
+import type { LLMConfig, DatabaseSchema } from '../types/schema';
 
 interface SchemaGeneratorPanelProps {
   onSchemaGenerated: (schema: DatabaseSchema) => void;
