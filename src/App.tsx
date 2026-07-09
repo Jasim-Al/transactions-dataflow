@@ -512,7 +512,7 @@ export default function App() {
       </header>
 
       {/* Main Workspace Layout */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden h-[calc(100vh-65px)] min-h-0">
         {/* Sidebar Generator */}
         <SchemaGeneratorPanel 
           onSchemaGenerated={onSchemaGenerated} 
@@ -521,7 +521,7 @@ export default function App() {
         />
 
         {/* Dataflow Canvas */}
-        <div className="flex-1 h-full relative">
+        <div className="flex-1 h-full w-full relative" style={{ height: '100%', width: '100%', minHeight: '300px' }}>
           <ReactFlow
             nodes={flowNodes}
             edges={flowEdges}
@@ -530,7 +530,6 @@ export default function App() {
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onEdgeClick={onEdgeClick}
-            fitView
             className="bg-background"
           >
             <Background 
