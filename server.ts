@@ -47,7 +47,24 @@ Important Instructions:
   2. Extract the nested structure into its own table, creating a relational linkage with a foreign key and relation configuration.
 - ONLY use "jsonb" when the column stores highly arbitrary, unstructured, or dynamically changing key-value collections that cannot be represented as regular fields or relations.
 - Automatically add primary keys (e.g. an "id" column of type "serial" or "uuid") if not specified.
-- For relationships, set "type" correctly. If Table A has a column referencing Table B, Table A is the "fromTable" and the column is "fromColumn".
+- Relational Reference Mapping (relations array):
+  You MUST identify all foreign key linkages and represent them in the "relations" array.
+  * For every relationship, define:
+    - "fromTable": the table holding the foreign key column (e.g. "posts").
+    - "fromColumn": the foreign key column name (e.g. "author_id").
+    - "toTable": the referenced parent table (e.g. "users").
+    - "toColumn": the referenced primary key column (e.g. "id").
+    - "type": "one-to-one" | "one-to-many" | "many-to-one" | "many-to-many" (default to "many-to-one" for standard foreign keys).
+  * Example mapping:
+    If table "posts" has "author_id" referencing table "users"."id", the relations array must contain:
+    {
+      "fromTable": "posts",
+      "fromColumn": "author_id",
+      "toTable": "users",
+      "toColumn": "id",
+      "type": "many-to-one"
+    }
+  * Ensure that if you add a foreign key column to a table, you also add the corresponding relation mapping into the "relations" list. Do not leave the relations array empty when linkages exist.
 - Try to infer indexes on columns that are likely to be queried or used in lookups (e.g. email, username, foreign keys).`;
 
 function getModelInstance(provider: string, apiKey: string, modelName?: string) {
