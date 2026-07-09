@@ -6,12 +6,93 @@ interface SchemaGeneratorPanelProps {
   onSchemaGenerated: (schema: DatabaseSchema) => void;
   config: LLMConfig;
   setConfig: React.Dispatch<React.SetStateAction<LLMConfig>>;
+  isStreaming: boolean;
+  setIsStreaming: (s: boolean) => void;
+  streamingText: string;
+  setStreamingText: (t: string) => void;
 }
+
+const repairJSON = (rawText: string): string => {
+  let cleaned = rawText.trim();
+  if (cleaned.startsWith("```json")) {
+    cleaned = cleaned.substring(7, cleaned.length - 3).trim();
+  } else if (cleaned.startsWith("```")) {
+    cleaned = cleaned.substring(3, cleaned.length - 3).trim();
+  }
+
+  try {
+    JSON.parse(cleaned);
+    return cleaned;
+  } catch (e) {}
+
+  let braces = 0;
+  let brackets = 0;
+  let inString = false;
+  let escaped = false;
+  
+  for (let i = 0; i < cleaned.length; i++) {
+    const char = cleaned[i];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (char === '\\') {
+      escaped = true;
+      continue;
+    }
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (!inString) {
+      if (char === '{') braces++;
+      if (char === '}') braces--;
+      if (char === '[') brackets++;
+      if (char === ']') brackets--;
+    }
+  }
+  
+  let repaired = cleaned;
+  if (inString) repaired += '"';
+  while (brackets > 0) {
+    repaired += ']';
+    brackets--;
+  }
+  while (braces > 0) {
+    repaired += '}';
+    braces--;
+  }
+
+  try {
+    JSON.parse(repaired);
+    return repaired;
+  } catch (e) {}
+
+  const suffixes = [
+    '\n          ]\n        }\n      ]\n    }\n  ],\n  "relations": []\n}',
+    '\n      ]\n    }\n  ],\n  "relations": []\n}',
+    '\n    }\n  ],\n  "relations": []\n}',
+    '\n  ],\n  "relations": []\n}',
+    '\n}',
+    ']}',
+  ];
+  for (const sfx of suffixes) {
+    try {
+      const candidate = cleaned + sfx;
+      JSON.parse(candidate);
+      return candidate;
+    } catch (e) {}
+  }
+
+  return cleaned;
+};
 
 export const SchemaGeneratorPanel: React.FC<SchemaGeneratorPanelProps> = ({ 
   onSchemaGenerated, 
   config, 
-  setConfig 
+  setConfig,
+  setIsStreaming,
+  setStreamingText
 }) => {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,6 +105,8 @@ export const SchemaGeneratorPanel: React.FC<SchemaGeneratorPanelProps> = ({
 
     setLoading(true);
     setError(null);
+    setIsStreaming(true);
+    setStreamingText('');
 
     try {
       const response = await fetch('/api/schema/generate', {
@@ -39,24 +122,78 @@ export const SchemaGeneratorPanel: React.FC<SchemaGeneratorPanelProps> = ({
         }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate schema');
+        const errorText = await response.text();
+        let parsedErr = errorText;
+        try {
+          const parsed = JSON.parse(errorText);
+          parsedErr = parsed.error || errorText;
+        } catch (e) {}
+        throw new Error(parsedErr || 'Failed to generate schema');
       }
 
-      if (data.schema && data.schema.tables) {
-        console.log("LLM Raw Response:", data.rawResponse);
-        console.log("Parsed LLM Schema:", data.schema);
-        onSchemaGenerated(data.schema);
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('Response stream reader is not available');
+      }
+
+      const decoder = new TextDecoder();
+      let accumulated = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunkText = decoder.decode(value, { stream: true });
+        accumulated += chunkText;
+        setStreamingText(accumulated);
+      }
+
+      console.log("LLM Raw Streamed Response:", accumulated);
+      
+      const repairedJson = repairJSON(accumulated);
+      let schemaObj: any = null;
+
+      try {
+        schemaObj = JSON.parse(repairedJson);
+      } catch (err) {
+        // Fallback regex parsing if JSON structure is completely broken
+        const tables: any[] = [];
+        const tableMatches = repairedJson.matchAll(/"name":\s*"([^"]+)"[\s\S]*?"columns":\s*\[([\s\S]*?)\]/g);
+        for (const match of tableMatches) {
+          const tableName = match[1];
+          const colsText = match[2];
+          const columns: any[] = [];
+          const colMatches = colsText.matchAll(/\{[\s\S]*?"name":\s*"([^"]+)"[\s\S]*?"type":\s*"([^"]+)"[\s\S]*?\}/g);
+          for (const colMatch of colMatches) {
+            columns.push({
+              name: colMatch[1],
+              type: colMatch[2],
+              primaryKey: colMatch[0].includes('"primaryKey": true'),
+              notNull: colMatch[0].includes('"notNull": true'),
+              unique: colMatch[0].includes('"unique": true'),
+              isIndex: colMatch[0].includes('"isIndex": true')
+            });
+          }
+          tables.push({ name: tableName, columns });
+        }
+        if (tables.length > 0) {
+          schemaObj = { tables, relations: [] };
+        }
+      }
+
+      if (schemaObj && schemaObj.tables) {
+        console.log("Parsed LLM Schema:", schemaObj);
+        onSchemaGenerated(schemaObj);
       } else {
-        throw new Error('Invalid schema format returned from LLM');
+        throw new Error('Could not parse schema from the generated text. Try modifying your prompt.');
       }
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'An unexpected error occurred. Make sure the local Ollama server is running or correct your API key.');
+      setError(err.message || 'An unexpected error occurred. Make sure your local Ollama server is running or correct your API key.');
     } finally {
       setLoading(false);
+      setIsStreaming(false);
     }
   };
 

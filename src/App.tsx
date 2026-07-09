@@ -102,6 +102,8 @@ export default function App() {
   });
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingText, setStreamingText] = useState('');
 
   // Generate Drizzle Schema code in real-time
   const drizzleCode = useMemo(() => generateDrizzleSchema(schema), [schema]);
@@ -533,6 +535,10 @@ export default function App() {
           onSchemaGenerated={onSchemaGenerated} 
           config={llmConfig} 
           setConfig={setLlmConfig} 
+          isStreaming={isStreaming}
+          setIsStreaming={setIsStreaming}
+          streamingText={streamingText}
+          setStreamingText={setStreamingText}
         />
 
         {/* Dataflow Canvas */}
@@ -557,6 +563,35 @@ export default function App() {
               <Controls className="!bg-card !border-border !rounded-xl !shadow-lg text-foreground fill-foreground" />
             </ReactFlow>
           </ReactFlowProvider>
+
+          {/* Futuristic Floating Stream Overlay */}
+          {isStreaming && (
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 select-none">
+              <div className="bg-card border border-primary/25 rounded-2xl p-6 w-full max-w-2xl shadow-[0_0_50px_rgba(120,119,198,0.15)] flex flex-col gap-4 animate-in fade-in zoom-in duration-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-5 h-5 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">AI Schema Generation in Progress</h3>
+                      <p className="text-[10px] text-muted-foreground">Streaming real-time structured JSON schema from model</p>
+                    </div>
+                  </div>
+                  <div className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-primary animate-pulse">
+                    Live Stream
+                  </div>
+                </div>
+                
+                <div className="relative">
+                  <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 rounded bg-black/40 border border-border text-[9px] font-mono text-muted-foreground">
+                    <span>{streamingText.length} bytes</span>
+                  </div>
+                  <pre className="font-mono text-xs text-indigo-300 bg-black/90 p-4 rounded-xl border border-border/80 overflow-y-auto max-h-[300px] text-left leading-relaxed select-text shadow-inner scrollbar-thin">
+                    <code>{streamingText || 'Connecting to model...'}</code>
+                  </pre>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Real-time Code Preview Panel */}

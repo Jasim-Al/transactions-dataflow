@@ -1,5 +1,5 @@
 import { CONVERSION_GUIDE } from "./src/server/conversion-guide";
-import { generateText, generateObject } from "ai";
+import { generateText, generateObject, streamText } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
@@ -79,7 +79,7 @@ async function handleGenerate(req: Request): Promise<Response> {
 
     if (provider === "ollama") {
       const modelName = model || "gemma4:e4b";
-      // Fetch from local Ollama instance
+      // Fetch from local Ollama instance with stream: true
       const response = await fetch("http://localhost:11434/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -89,7 +89,7 @@ async function handleGenerate(req: Request): Promise<Response> {
             { role: "system", content: GENERATE_SYSTEM_PROMPT },
             { role: "user", content: prompt }
           ],
-          stream: false,
+          stream: true,
           format: "json",
           options: {
             num_ctx: 16384,
@@ -104,151 +104,98 @@ async function handleGenerate(req: Request): Promise<Response> {
         return Response.json({ error: `Ollama failed: ${errorText}` }, { status: 500 });
       }
 
+      const reader = response.body?.getReader();
+      const encoder = new TextEncoder();
+      const decoder = new TextDecoder();
 
-      const data = await response.json();
-      let rawText = data.message?.content || "";
-
-      // Clean rawText
-      rawText = rawText.trim();
-      if (rawText.startsWith("```json")) {
-        rawText = rawText.substring(7, rawText.length - 3).trim();
-      } else if (rawText.startsWith("```")) {
-        rawText = rawText.substring(3, rawText.length - 3).trim();
-      }
-
-      // Repair incomplete/truncated JSON structures from the local model
-      let parsedSchema: any = null;
-      let repairAttempts = [
-        rawText,
-        // Attempt 1: Add missing array/object delimiters if truncated inside table list
-        rawText + '\n          ]\n        }\n      ]\n    }\n  ],\n  "relations": []\n}',
-        rawText + '\n      ]\n    }\n  ],\n  "relations": []\n}',
-        rawText + '\n    }\n  ],\n  "relations": []\n}',
-        rawText + '\n  ],\n  "relations": []\n}',
-        rawText + '\n}',
-        rawText + ']}',
-      ];
-
-      // Dynamic JSON recovery function
-      const tryBalancedRepair = (jsonStr: string): string => {
-        let braces = 0;
-        let brackets = 0;
-        let inString = false;
-        let escaped = false;
-        
-        for (let i = 0; i < jsonStr.length; i++) {
-          const char = jsonStr[i];
-          if (escaped) {
-            escaped = false;
-            continue;
+      const stream = new ReadableStream({
+        async start(controller) {
+          if (!reader) {
+            controller.close();
+            return;
           }
-          if (char === '\\') {
-            escaped = true;
-            continue;
-          }
-          if (char === '"') {
-            inString = !inString;
-            continue;
-          }
-          if (!inString) {
-            if (char === '{') braces++;
-            if (char === '}') braces--;
-            if (char === '[') brackets++;
-            if (char === ']') brackets--;
-          }
-        }
-        
-        let repaired = jsonStr;
-        if (inString) repaired += '"';
-        
-        while (brackets > 0) {
-          repaired += ']';
-          brackets--;
-        }
-        while (braces > 0) {
-          repaired += '}';
-          braces--;
-        }
-        return repaired;
-      };
+          try {
+            let buffer = "";
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
 
-      repairAttempts.push(tryBalancedRepair(rawText));
+              const chunkText = decoder.decode(value, { stream: true });
+              buffer += chunkText;
 
-      for (const attempt of repairAttempts) {
-        try {
-          const candidate = JSON.parse(attempt);
-          if (candidate && (candidate.tables || Array.isArray(candidate))) {
-            parsedSchema = candidate;
-            break;
-          }
-        } catch (e) {
-          // keep trying
-        }
-      }
+              const lines = buffer.split("\n");
+              // Keep the last partial line in buffer
+              buffer = lines.pop() || "";
 
-      // If all structured parses fail, execute a fallback regex parser to capture what we can
-      if (!parsedSchema) {
-        try {
-          const tables: any[] = [];
-          const tableMatches = rawText.matchAll(/"name":\s*"([^"]+)"[\s\S]*?"columns":\s*\[([\s\S]*?)\]/g);
-          for (const match of tableMatches) {
-            const tableName = match[1];
-            const colsText = match[2];
-            const columns: any[] = [];
-            const colMatches = colsText.matchAll(/\{[\s\S]*?"name":\s*"([^"]+)"[\s\S]*?"type":\s*"([^"]+)"[\s\S]*?\}/g);
-            for (const colMatch of colMatches) {
-              columns.push({
-                name: colMatch[1],
-                type: colMatch[2],
-                primaryKey: colMatch[0].includes('"primaryKey": true'),
-                notNull: colMatch[0].includes('"notNull": true'),
-                unique: colMatch[0].includes('"unique": true'),
-                isIndex: colMatch[0].includes('"isIndex": true')
-              });
+              for (const line of lines) {
+                if (line.trim() === "") continue;
+                try {
+                  const parsed = JSON.parse(line);
+                  const content = parsed.message?.content || "";
+                  if (content) {
+                    controller.enqueue(encoder.encode(content));
+                  }
+                } catch (e) {
+                  // Ignore parse errors on incomplete JSON lines
+                }
+              }
             }
-            tables.push({ name: tableName, columns });
+            // Parse remaining buffer
+            if (buffer.trim() !== "") {
+              try {
+                const parsed = JSON.parse(buffer);
+                const content = parsed.message?.content || "";
+                if (content) {
+                  controller.enqueue(encoder.encode(content));
+                }
+              } catch (e) {}
+            }
+          } catch (e) {
+            console.error("Ollama stream fetch error:", e);
+          } finally {
+            controller.close();
           }
-          if (tables.length > 0) {
-            parsedSchema = { tables, relations: [] };
-          }
-        } catch (e) {
-          // fallback failed
         }
-      }
+      });
 
-      if (!parsedSchema) {
-        return Response.json({ error: "Failed to parse or repair incomplete local LLM JSON response", rawResponse: rawText }, { status: 500 });
-      }
-
-      const finalSchema = {
-        tables: Array.isArray(parsedSchema.tables) ? parsedSchema.tables : [],
-        relations: Array.isArray(parsedSchema.relations) ? parsedSchema.relations : []
-      };
-
-      return Response.json({ schema: finalSchema, rawResponse: rawText });
+      return new Response(stream, {
+        headers: {
+          "Content-Type": "text/event-stream; charset=utf-8",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive"
+        }
+      });
     } else {
-      // Use Vercel AI SDK
+      // Use Vercel AI SDK streamText
       const modelInstance = getModelInstance(provider, apiKey, model);
-      const { text } = await generateText({
+      const { textStream } = await streamText({
         model: modelInstance,
         system: GENERATE_SYSTEM_PROMPT,
         prompt: prompt,
       });
 
-      // Attempt to strip potential markdown codeblocks if provider ignored system instructions
-      let cleanedText = text.trim();
-      if (cleanedText.startsWith("```json")) {
-        cleanedText = cleanedText.substring(7, cleanedText.length - 3).trim();
-      } else if (cleanedText.startsWith("```")) {
-        cleanedText = cleanedText.substring(3, cleanedText.length - 3).trim();
-      }
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        async start(controller) {
+          try {
+            for await (const chunk of textStream) {
+              controller.enqueue(encoder.encode(chunk));
+            }
+          } catch (e) {
+            console.error("AI SDK stream text error:", e);
+          } finally {
+            controller.close();
+          }
+        }
+      });
 
-      try {
-        const schema = JSON.parse(cleanedText);
-        return Response.json({ schema, rawResponse: text });
-      } catch (err) {
-        return Response.json({ error: "Failed to parse hosted LLM JSON response", rawResponse: text }, { status: 500 });
-      }
+      return new Response(stream, {
+        headers: {
+          "Content-Type": "text/event-stream; charset=utf-8",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive"
+        }
+      });
     }
   } catch (error: any) {
     return Response.json({ error: error.message || "Internal Server Error" }, { status: 500 });
