@@ -1,17 +1,18 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { 
   ReactFlow, 
   Background, 
   Controls, 
   BackgroundVariant,
-  ReactFlowProvider
+  ReactFlowProvider,
+  useNodesState,
+  useEdgesState,
+  addEdge
 } from '@xyflow/react';
 import type {
   Connection,
   Edge,
-  Node,
-  NodeChange,
-  EdgeChange
+  Node
 } from '@xyflow/react';
 
 import { Database, Plus, Code, Share2, Trash2, Info } from 'lucide-react';
@@ -93,7 +94,8 @@ const nodeTypes = {
 };
 
 export default function App() {
-  const [schema, setSchema] = useState<DatabaseSchema>(initialSampleSchema);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [llmConfig, setLlmConfig] = useState<LLMConfig>({
     provider: 'ollama',
     apiKey: '',
@@ -104,14 +106,186 @@ export default function App() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState('');
 
+  // Reconstruct schema object live from current nodes and edges
+  const schema = useMemo<DatabaseSchema>(() => {
+    const tables = nodes.map(n => (n.data as any).table as Table);
+    const relations = edges.map(e => {
+      const fromTable = tables.find(t => t.id === e.source)?.name || e.source;
+      const toTable = tables.find(t => t.id === e.target)?.name || e.target;
+      
+      const fromColId = e.sourceHandle?.replace(`${e.source}-`, '').replace('-source', '') || '';
+      const toColId = e.targetHandle?.replace(`${e.target}-`, '').replace('-target', '') || '';
+      
+      const fromColObj = tables.find(t => t.id === e.source)?.columns.find(c => c.id === fromColId);
+      const toColObj = tables.find(t => t.id === e.target)?.columns.find(c => c.id === toColId);
+      
+      const fromCol = fromColObj ? fromColObj.name : fromColId;
+      const toCol = toColObj ? toColObj.name : toColId;
+      
+      let type: Relation['type'] = 'many-to-one';
+      if (e.label === '1:1') type = 'one-to-one';
+      else if (e.label === '1:N') type = 'one-to-many';
+      else if (e.label === 'N:M') type = 'many-to-many';
+      
+      return {
+        id: e.id,
+        fromTable,
+        fromColumn: fromCol,
+        toTable,
+        toColumn: toCol,
+        type
+      };
+    });
+    
+    return { tables, relations };
+  }, [nodes, edges]);
+
   // Generate Drizzle Schema code in real-time
   const drizzleCode = useMemo(() => generateDrizzleSchema(schema), [schema]);
 
-  const onSchemaGenerated = (newSchema: DatabaseSchema) => {
+  // Stable callbacks that interact directly with React Flow's state updates
+  const handleRenameTable = useCallback((tableId: string, newName: string) => {
+    setNodes((nds) => nds.map(node => {
+      if (node.id === tableId) {
+        return {
+          ...(node as any),
+          id: newName,
+          data: {
+            ...(node.data as any),
+            table: {
+              ...((node.data as any).table),
+              id: newName,
+              name: newName
+            }
+          }
+        };
+      }
+      return node;
+    }));
+    // Rename references inside edges
+    setEdges((eds) => eds.map(edge => {
+      let source = edge.source;
+      let target = edge.target;
+      let sourceHandle = edge.sourceHandle;
+      let targetHandle = edge.targetHandle;
+      if (edge.source === tableId) {
+        source = newName;
+        sourceHandle = edge.sourceHandle?.replace(`${tableId}-`, `${newName}-`);
+      }
+      if (edge.target === tableId) {
+        target = newName;
+        targetHandle = edge.targetHandle?.replace(`${tableId}-`, `${newName}-`);
+      }
+      return { ...edge, source, target, sourceHandle, targetHandle };
+    }));
+  }, [setNodes, setEdges]);
+
+  const handleDeleteTable = useCallback((tableId: string) => {
+    setNodes((nds) => nds.filter(node => node.id !== tableId));
+    setEdges((eds) => eds.filter(edge => edge.source !== tableId && edge.target !== tableId));
+  }, [setNodes, setEdges]);
+
+  const handleAddColumn = useCallback((tableId: string) => {
+    setNodes((nds) => nds.map(node => {
+      if (node.id === tableId) {
+        const columns = (node.data as any).table.columns;
+        const newCol = {
+          id: `col_${Date.now()}`,
+          name: `column_${columns.length + 1}`,
+          type: 'varchar' as const,
+          primaryKey: false,
+          notNull: false,
+          unique: false,
+          isIndex: false,
+        };
+        return {
+          ...(node as any),
+          data: {
+            ...(node.data as any),
+            table: {
+              ...((node.data as any).table),
+              columns: [...columns, newCol]
+            }
+          }
+        };
+      }
+      return node;
+    }));
+  }, [setNodes]);
+
+  const handleUpdateColumn = useCallback((tableId: string, columnId: string, updates: Partial<Column>) => {
+    setNodes((nds) => nds.map(node => {
+      if (node.id === tableId) {
+        const table = (node.data as any).table;
+        const updatedColumns = table.columns.map((c: any) => c.id === columnId ? { ...c, ...updates } : c);
+        return {
+          ...(node as any),
+          data: {
+            ...(node.data as any),
+            table: {
+              ...table,
+              columns: updatedColumns
+            }
+          }
+        };
+      }
+      return node;
+    }));
+  }, [setNodes]);
+
+  const handleDeleteColumn = useCallback((tableId: string, columnId: string) => {
+    setNodes((nds) => nds.map(node => {
+      if (node.id === tableId) {
+        const table = (node.data as any).table;
+        return {
+          ...(node as any),
+          data: {
+            ...(node.data as any),
+            table: {
+              ...table,
+              columns: table.columns.filter((c: any) => c.id !== columnId)
+            }
+          }
+        };
+      }
+      return node;
+    }));
+    // Delete any connected edges
+    setEdges((eds) => eds.filter(edge => 
+      !(edge.source === tableId && edge.sourceHandle === `${tableId}-${columnId}-source`) &&
+      !(edge.target === tableId && edge.targetHandle === `${tableId}-${columnId}-target`)
+    ));
+  }, [setNodes, setEdges]);
+
+  const handleAddTable = () => {
+    const tableId = `table_${Date.now()}`;
+    const newTableNode: Node = {
+      id: tableId,
+      type: 'table',
+      position: { x: 200 + Math.random() * 100, y: 200 + Math.random() * 100 },
+      data: {
+        table: {
+          id: tableId,
+          name: `new_table_${nodes.length + 1}`,
+          columns: [
+            { id: `id_${Date.now()}`, name: 'id', type: 'serial', primaryKey: true, notNull: true, unique: false, isIndex: false }
+          ]
+        },
+        onRenameTable: handleRenameTable,
+        onDeleteTable: handleDeleteTable,
+        onAddColumn: handleAddColumn,
+        onUpdateColumn: handleUpdateColumn,
+        onDeleteColumn: handleDeleteColumn,
+      }
+    };
+    setNodes((nds) => [...nds, newTableNode]);
+  };
+
+  const onSchemaGenerated = useCallback((newSchema: DatabaseSchema) => {
     if (!newSchema || !newSchema.tables) return;
 
-    // Sanitize incoming schema from LLM (make sure all tables and columns have unique stable ids)
-    const sanitizedTables = newSchema.tables.map((t, idx) => {
+    // Map tables to ReactFlow nodes
+    const flowNodes = newSchema.tables.map((t, idx) => {
       const tableId = t.id || t.name || `table_${idx}`;
       const tableName = t.name || tableId;
 
@@ -127,291 +301,59 @@ export default function App() {
 
       return {
         id: tableId,
-        name: tableName,
-        columns: sanitizedColumns,
-        x: t.x !== undefined ? t.x : 80 + (idx % 3) * 380,
-        y: t.y !== undefined ? t.y : 100 + Math.floor(idx / 3) * 320,
-      };
-    });
-
-    // Also sanitize relations to ensure valid references
-    const sanitizedRelations = (newSchema.relations || []).map((r) => ({
-      id: r.id || `rel_${r.fromTable}_${r.fromColumn}_${r.toTable}_${r.toColumn}`,
-      fromTable: r.fromTable,
-      fromColumn: r.fromColumn,
-      toTable: r.toTable,
-      toColumn: r.toColumn,
-      type: r.type || 'many-to-one',
-    }));
-
-    setSchema({
-      tables: sanitizedTables,
-      relations: sanitizedRelations,
-    });
-  };
-
-  const handleAddTable = () => {
-    const tableId = `table_${Date.now()}`;
-    const newTable: Table = {
-      id: tableId,
-      name: `new_table_${schema.tables.length + 1}`,
-      x: 200 + Math.random() * 100,
-      y: 200 + Math.random() * 100,
-      columns: [
-        { id: `id_${Date.now()}`, name: 'id', type: 'serial', primaryKey: true, notNull: true, unique: false, isIndex: false }
-      ]
-    };
-    setSchema(prev => ({
-      ...prev,
-      tables: [...prev.tables, newTable]
-    }));
-  };
-
-  const handleRenameTable = useCallback((tableId: string, newName: string) => {
-    setSchema(prev => {
-      // Find old name to update relations
-      const table = prev.tables.find(t => t.id === tableId);
-      if (!table) return prev;
-      
-      const oldName = table.name;
-      
-      return {
-        tables: prev.tables.map(t => t.id === tableId ? { ...t, name: newName, id: newName } : t),
-        relations: prev.relations.map(r => {
-          let fromTable = r.fromTable;
-          let toTable = r.toTable;
-          if (r.fromTable === oldName) fromTable = newName;
-          if (r.toTable === oldName) toTable = newName;
-          return { ...r, fromTable, toTable };
-        })
-      };
-    });
-  }, []);
-
-  const handleDeleteTable = useCallback((tableId: string) => {
-    setSchema(prev => {
-      const table = prev.tables.find(t => t.id === tableId);
-      if (!table) return prev;
-      const tableName = table.name;
-      return {
-        tables: prev.tables.filter(t => t.id !== tableId),
-        relations: prev.relations.filter(r => r.fromTable !== tableName && r.toTable !== tableName)
-      };
-    });
-  }, []);
-
-  const handleAddColumn = useCallback((tableId: string) => {
-    setSchema(prev => ({
-      ...prev,
-      tables: prev.tables.map(t => {
-        if (t.id !== tableId) return t;
-        const colNum = t.columns.length + 1;
-        const newCol: Column = {
-          id: `col_${Date.now()}_${colNum}`,
-          name: `column_${colNum}`,
-          type: 'varchar',
-          primaryKey: false,
-          notNull: false,
-          unique: false,
-          isIndex: false
-        };
-        return {
-          ...t,
-          columns: [...t.columns, newCol]
-        };
-      })
-    }));
-  }, []);
-
-  const handleUpdateColumn = useCallback((tableId: string, columnId: string, updates: Partial<Column>) => {
-    setSchema(prev => {
-      const targetTable = prev.tables.find(t => t.id === tableId);
-      if (!targetTable) return prev;
-      
-      const oldColumn = targetTable.columns.find(c => c.id === columnId);
-      if (!oldColumn) return prev;
-
-      const newTables = prev.tables.map(t => {
-        if (t.id !== tableId) return t;
-        return {
-          ...t,
-          columns: t.columns.map(c => c.id === columnId ? { ...c, ...updates } : c)
-        };
-      });
-
-      // If column name changed, update relations
-      if (updates.name && updates.name !== oldColumn.name) {
-        const newRelations = prev.relations.map(r => {
-          let fromColumn = r.fromColumn;
-          let toColumn = r.toColumn;
-          if (r.fromTable === targetTable.name && r.fromColumn === oldColumn.name) fromColumn = updates.name!;
-          if (r.toTable === targetTable.name && r.toColumn === oldColumn.name) toColumn = updates.name!;
-          return { ...r, fromColumn, toColumn };
-        });
-        return { tables: newTables, relations: newRelations };
-      }
-
-      return { ...prev, tables: newTables };
-    });
-  }, []);
-
-  const handleDeleteColumn = useCallback((tableId: string, columnId: string) => {
-    setSchema(prev => {
-      const targetTable = prev.tables.find(t => t.id === tableId);
-      if (!targetTable) return prev;
-      const targetColumn = targetTable.columns.find(c => c.id === columnId);
-      if (!targetColumn) return prev;
-
-      return {
-        tables: prev.tables.map(t => {
-          if (t.id !== tableId) return t;
-          return {
-            ...t,
-            columns: t.columns.filter(c => c.id !== columnId)
-          };
-        }),
-        relations: prev.relations.filter(r => 
-          !(r.fromTable === targetTable.name && r.fromColumn === targetColumn.name) &&
-          !(r.toTable === targetTable.name && r.toColumn === targetColumn.name)
-        )
-      };
-    });
-  }, []);
-
-  // Node Change callback for drags
-  const onNodesChange = useCallback((changes: NodeChange[]) => {
-    const positionChanges = changes.filter(c => c.type === 'position');
-    if (positionChanges.length === 0) return;
-
-    setSchema(prev => {
-      let changed = false;
-      const updatedTables = prev.tables.map(table => {
-        const matchingChange = positionChanges.find((c: any) => c.id === table.id);
-        if (matchingChange && 'position' in matchingChange && matchingChange.position) {
-          const newX = matchingChange.position.x;
-          const newY = matchingChange.position.y;
-          if (newX !== table.x || newY !== table.y) {
-            changed = true;
-            return {
-              ...table,
-              x: newX,
-              y: newY
-            };
-          }
+        type: 'table',
+        position: {
+          x: t.x !== undefined ? t.x : 80 + (idx % 3) * 380,
+          y: t.y !== undefined ? t.y : 100 + Math.floor(idx / 3) * 320
+        },
+        data: {
+          table: {
+            id: tableId,
+            name: tableName,
+            columns: sanitizedColumns,
+          },
+          onRenameTable: handleRenameTable,
+          onDeleteTable: handleDeleteTable,
+          onAddColumn: handleAddColumn,
+          onUpdateColumn: handleUpdateColumn,
+          onDeleteColumn: handleDeleteColumn,
         }
-        return table;
-      });
-
-      if (!changed) return prev;
-      return { ...prev, tables: updatedTables };
-    });
-  }, []);
-
-  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
-    // Handle edge deletion via keyboard/toolbar
-    const deleteChanges = changes.filter(c => c.type === 'remove');
-    if (deleteChanges.length > 0) {
-      const idsToRemove = deleteChanges.map(c => c.id);
-      setSchema(prev => ({
-        ...prev,
-        relations: prev.relations.filter(r => !idsToRemove.includes(r.id))
-      }));
-    }
-  }, []);
-
-  // Setup relation connections
-  const onConnect = useCallback((connection: Connection) => {
-    const { source, sourceHandle, target, targetHandle } = connection;
-    if (!source || !sourceHandle || !target || !targetHandle) return;
-
-    // sourceHandle is in format "${tableId}-${columnId}-source"
-    // Extract column name by finding the column inside table columns
-    const sourceTableObj = schema.tables.find(t => t.id === source);
-    const targetTableObj = schema.tables.find(t => t.id === target);
-    if (!sourceTableObj || !targetTableObj) return;
-
-    const sourceColId = sourceHandle.replace(`${source}-`, '').replace('-source', '');
-    const targetColId = targetHandle.replace(`${target}-`, '').replace('-target', '');
-
-    const sourceCol = sourceTableObj.columns.find(c => c.id === sourceColId);
-    const targetCol = targetTableObj.columns.find(c => c.id === targetColId);
-    if (!sourceCol || !targetCol) return;
-
-    const newRelation: Relation = {
-      id: `rel_${sourceTableObj.name}_${sourceCol.name}_${targetTableObj.name}_${targetCol.name}`,
-      fromTable: sourceTableObj.name,
-      fromColumn: sourceCol.name,
-      toTable: targetTableObj.name,
-      toColumn: targetCol.name,
-      type: 'many-to-one' // default type
-    };
-
-    setSchema(prev => {
-      if (prev.relations.some(r => r.id === newRelation.id)) return prev;
-      return {
-        ...prev,
-        relations: [...prev.relations, newRelation]
       };
     });
-  }, [schema]);
 
-  // Convert schema state to ReactFlow nodes & edges
-  const flowNodes = useMemo<Node[]>(() => {
-    return schema.tables.map(table => ({
-      id: table.id,
-      type: 'table',
-      position: { x: table.x ?? 100, y: table.y ?? 100 },
-      data: {
-        table,
-        onRenameTable: handleRenameTable,
-        onDeleteTable: handleDeleteTable,
-        onAddColumn: handleAddColumn,
-        onUpdateColumn: handleUpdateColumn,
-        onDeleteColumn: handleDeleteColumn,
-      },
-    }));
-  }, [schema, handleRenameTable, handleDeleteTable, handleAddColumn, handleUpdateColumn, handleDeleteColumn]);
-
-  const flowEdges = useMemo<Edge[]>(() => {
-    const normalize = (s: string) => s.toLowerCase().replace(/_/g, '').replace(/-/g, '');
-
-    return schema.relations.map(rel => {
-      // Find table IDs using case and separator-tolerant lookup
-      const fromTableObj = schema.tables.find(t => 
-        normalize(t.name) === normalize(rel.fromTable) || 
-        normalize(t.id) === normalize(rel.fromTable)
+    // Map relations to ReactFlow edges
+    const flowEdges = (newSchema.relations || []).map(rel => {
+      const normalize = (s: string) => s.toLowerCase().replace(/_/g, '').replace(/-/g, '');
+      
+      const fromTableObj = newSchema.tables.find(t => 
+        normalize(t.name) === normalize(rel.fromTable) || normalize(t.id || '') === normalize(rel.fromTable)
       );
-      const toTableObj = schema.tables.find(t => 
-        normalize(t.name) === normalize(rel.toTable) || 
-        normalize(t.id) === normalize(rel.toTable)
+      const toTableObj = newSchema.tables.find(t => 
+        normalize(t.name) === normalize(rel.toTable) || normalize(t.id || '') === normalize(rel.toTable)
       );
       
-      const fromTableId = fromTableObj ? fromTableObj.id : rel.fromTable;
-      const toTableId = toTableObj ? toTableObj.id : rel.toTable;
-
-      // Find column IDs using case and separator-tolerant lookup
+      const fromTableId = fromTableObj ? (fromTableObj.id || fromTableObj.name) : rel.fromTable;
+      const toTableId = toTableObj ? (toTableObj.id || toTableObj.name) : rel.toTable;
+      
       const fromColObj = fromTableObj?.columns.find(c => 
-        normalize(c.name) === normalize(rel.fromColumn) || 
-        normalize(c.id) === normalize(rel.fromColumn)
+        normalize(c.name) === normalize(rel.fromColumn) || normalize(c.id || '') === normalize(rel.fromColumn)
       );
       const toColObj = toTableObj?.columns.find(c => 
-        normalize(c.name) === normalize(rel.toColumn) || 
-        normalize(c.id) === normalize(rel.toColumn)
+        normalize(c.name) === normalize(rel.toColumn) || normalize(c.id || '') === normalize(rel.toColumn)
       );
+      
+      const fromColId = fromColObj ? (fromColObj.id || fromColObj.name) : rel.fromColumn;
+      const toColId = toColObj ? (toColObj.id || toColObj.name) : rel.toColumn;
 
-      const fromColId = fromColObj ? fromColObj.id : rel.fromColumn;
-      const toColId = toColObj ? toColObj.id : rel.toColumn;
-
-      const isSelected = selectedEdgeId === rel.id;
-
-      // Label description mapping
       let label = 'N:1';
       if (rel.type === 'one-to-one') label = '1:1';
       else if (rel.type === 'one-to-many') label = '1:N';
       else if (rel.type === 'many-to-many') label = 'N:M';
 
+      const isSelected = selectedEdgeId === rel.id;
+
       return {
-        id: rel.id,
+        id: rel.id || `rel_${fromTableId}_${fromColId}_${toTableId}_${toColId}`,
         source: fromTableId,
         target: toTableId,
         sourceHandle: `${fromTableId}-${fromColId}-source`,
@@ -421,7 +363,7 @@ export default function App() {
         label,
         selected: isSelected,
         labelStyle: { fill: '#ffffff', fontSize: 9, fontWeight: 700 },
-        labelBgPadding: [4, 2],
+        labelBgPadding: [4, 2] as [number, number],
         labelBgBorderRadius: 4,
         labelBgStyle: { fill: isSelected ? 'hsl(var(--primary))' : 'hsl(var(--muted))', color: '#fff' },
         style: {
@@ -430,45 +372,79 @@ export default function App() {
         }
       };
     });
-  }, [schema, selectedEdgeId]);
+
+    setNodes(flowNodes);
+    setEdges(flowEdges);
+  }, [handleRenameTable, handleDeleteTable, handleAddColumn, handleUpdateColumn, handleDeleteColumn, selectedEdgeId]);
+
+  // Load sample schema initially
+  useEffect(() => {
+    onSchemaGenerated(initialSampleSchema);
+  }, []);
+
+  const onConnect = useCallback((connection: Connection) => {
+    setEdges((eds) => addEdge({
+      ...connection,
+      type: 'smoothstep',
+      animated: true,
+      label: 'N:1',
+      labelStyle: { fill: '#ffffff', fontSize: 9, fontWeight: 700 },
+      labelBgPadding: [4, 2] as [number, number],
+      labelBgBorderRadius: 4,
+      labelBgStyle: { fill: 'hsl(var(--muted))', color: '#fff' },
+      style: {
+        stroke: 'hsl(var(--muted-foreground))',
+        strokeWidth: 2,
+      }
+    }, eds));
+  }, [setEdges]);
 
   const onEdgeClick = useCallback((_event: React.MouseEvent, edge: Edge) => {
     setSelectedEdgeId(edge.id === selectedEdgeId ? null : edge.id);
   }, [selectedEdgeId]);
 
+  // Synchronize selection styling inside edge objects
+  useEffect(() => {
+    setEdges((eds) => eds.map(e => {
+      const isSelected = e.id === selectedEdgeId;
+      return {
+        ...e,
+        selected: isSelected,
+        labelBgStyle: { fill: isSelected ? 'hsl(var(--primary))' : 'hsl(var(--muted))', color: '#fff' },
+        style: {
+          stroke: isSelected ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
+          strokeWidth: isSelected ? 3 : 2,
+        }
+      };
+    }));
+  }, [selectedEdgeId, setEdges]);
+
   const handleToggleRelationType = () => {
     if (!selectedEdgeId) return;
-    setSchema(prev => ({
-      ...prev,
-      relations: prev.relations.map(r => {
-        if (r.id !== selectedEdgeId) return r;
-        const types: Relation['type'][] = ['many-to-one', 'one-to-one', 'one-to-many', 'many-to-many'];
-        const nextIdx = (types.indexOf(r.type) + 1) % types.length;
-        return { ...r, type: types[nextIdx] };
-      })
+    setEdges((eds) => eds.map(e => {
+      if (e.id !== selectedEdgeId) return e;
+      const types = ['N:1', '1:1', '1:N', 'N:M'];
+      const nextIdx = (types.indexOf(e.label as string || 'N:1') + 1) % types.length;
+      return { ...e, label: types[nextIdx] };
     }));
   };
 
   const handleDeleteSelectedRelation = () => {
     if (!selectedEdgeId) return;
-    setSchema(prev => ({
-      ...prev,
-      relations: prev.relations.filter(r => r.id !== selectedEdgeId)
-    }));
+    setEdges((eds) => eds.filter(e => e.id !== selectedEdgeId));
     setSelectedEdgeId(null);
   };
 
   const handleClearAll = () => {
-    setSchema({ tables: [], relations: [] });
+    setNodes([]);
+    setEdges([]);
     setSelectedEdgeId(null);
   };
 
   const handleLoadSample = () => {
-    setSchema(initialSampleSchema);
+    onSchemaGenerated(initialSampleSchema);
     setSelectedEdgeId(null);
   };
-
-  console.log("App render, flowNodes:", flowNodes, "flowEdges:", flowEdges);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground flex-col">
@@ -557,8 +533,8 @@ export default function App() {
         <div className="flex-1 h-full w-full relative" style={{ height: '100%', width: '100%', minHeight: '300px' }}>
           <ReactFlowProvider>
             <ReactFlow
-              nodes={flowNodes}
-              edges={flowEdges}
+              nodes={nodes}
+              edges={edges}
               nodeTypes={nodeTypes}
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
