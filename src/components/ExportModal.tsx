@@ -69,6 +69,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, drizz
         throw new Error(data.error || 'Failed to translate schema');
       }
 
+      console.log("LLM Translation Response:", data.translatedCode);
       setTranslatedCode(data.translatedCode);
     } catch (err: any) {
       console.error(err);

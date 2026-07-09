@@ -46,6 +46,8 @@ export const SchemaGeneratorPanel: React.FC<SchemaGeneratorPanelProps> = ({
       }
 
       if (data.schema && data.schema.tables) {
+        console.log("LLM Raw Response:", data.rawResponse);
+        console.log("Parsed LLM Schema:", data.schema);
         onSchemaGenerated(data.schema);
       } else {
         throw new Error('Invalid schema format returned from LLM');
