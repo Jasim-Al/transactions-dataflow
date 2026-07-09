@@ -42,6 +42,10 @@ Schema Structure:
 Important Instructions:
 - Create logical columns and foreign keys based on the user's description.
 - Use PostgreSQL-compatible types: "serial", "integer", "varchar", "text", "boolean", "timestamp", "uuid", "jsonb".
+- Relational Normalization of Embedded/Nested Structures: Do NOT default to using "jsonb" columns for embedded objects or arrays of sub-documents (e.g. Mongoose nested schemas). Instead, you MUST either:
+  1. Flatten the nested keys into separate columns in the main table (e.g. connections details, settings flag values), OR
+  2. Extract the nested structure into its own table, creating a relational linkage with a foreign key and relation configuration.
+- ONLY use "jsonb" when the column stores highly arbitrary, unstructured, or dynamically changing key-value collections that cannot be represented as regular fields or relations.
 - Automatically add primary keys (e.g. an "id" column of type "serial" or "uuid") if not specified.
 - For relationships, set "type" correctly. If Table A has a column referencing Table B, Table A is the "fromTable" and the column is "fromColumn".
 - Try to infer indexes on columns that are likely to be queried or used in lookups (e.g. email, username, foreign keys).`;
