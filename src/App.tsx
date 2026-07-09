@@ -3,7 +3,8 @@ import {
   ReactFlow, 
   Background, 
   Controls, 
-  BackgroundVariant
+  BackgroundVariant,
+  ReactFlowProvider
 } from '@xyflow/react';
 import type {
   Connection,
@@ -12,7 +13,6 @@ import type {
   NodeChange,
   EdgeChange
 } from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
 
 import { Database, Plus, Code, Share2, Trash2, Info } from 'lucide-react';
 import type { DatabaseSchema, Table, Column, Relation, LLMConfig } from './types/schema';
@@ -522,24 +522,26 @@ export default function App() {
 
         {/* Dataflow Canvas */}
         <div className="flex-1 h-full w-full relative" style={{ height: '100%', width: '100%', minHeight: '300px' }}>
-          <ReactFlow
-            nodes={flowNodes}
-            edges={flowEdges}
-            nodeTypes={nodeTypes}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onEdgeClick={onEdgeClick}
-            className="bg-background"
-          >
-            <Background 
-              variant={BackgroundVariant.Dots} 
-              gap={16} 
-              size={1} 
-              color="rgba(120, 119, 198, 0.15)" 
-            />
-            <Controls className="!bg-card !border-border !rounded-xl !shadow-lg text-foreground fill-foreground" />
-          </ReactFlow>
+          <ReactFlowProvider>
+            <ReactFlow
+              nodes={flowNodes}
+              edges={flowEdges}
+              nodeTypes={nodeTypes}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              onEdgeClick={onEdgeClick}
+              className="bg-background"
+            >
+              <Background 
+                variant={BackgroundVariant.Dots} 
+                gap={16} 
+                size={1} 
+                color="rgba(120, 119, 198, 0.15)" 
+              />
+              <Controls className="!bg-card !border-border !rounded-xl !shadow-lg text-foreground fill-foreground" />
+            </ReactFlow>
+          </ReactFlowProvider>
         </div>
 
         {/* Real-time Code Preview Panel */}
