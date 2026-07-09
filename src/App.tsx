@@ -13,6 +13,7 @@ import type {
   NodeChange,
   EdgeChange
 } from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 
 import { Database, Plus, Code, Share2, Trash2, Info } from 'lucide-react';
 import type { DatabaseSchema, Table, Column, Relation, LLMConfig } from './types/schema';
@@ -108,13 +109,13 @@ export default function App() {
   const onSchemaGenerated = (newSchema: DatabaseSchema) => {
     if (!newSchema || !newSchema.tables) return;
 
-    // Sanitize incoming schema from LLM (make sure all tables and columns have unique ids)
+    // Sanitize incoming schema from LLM (make sure all tables and columns have unique stable ids)
     const sanitizedTables = newSchema.tables.map((t, idx) => {
-      const tableId = t.id || t.name || `table_${idx}_${Date.now()}`;
+      const tableId = t.id || t.name || `table_${idx}`;
       const tableName = t.name || tableId;
 
       const sanitizedColumns = (t.columns || []).map((col, colIdx) => ({
-        id: col.id || `col_${tableName}_${col.name || colIdx}_${Date.now()}`,
+        id: col.id || col.name || `col_${colIdx}`,
         name: col.name || `column_${colIdx + 1}`,
         type: col.type || 'varchar',
         primaryKey: !!col.primaryKey,
@@ -133,8 +134,8 @@ export default function App() {
     });
 
     // Also sanitize relations to ensure valid references
-    const sanitizedRelations = (newSchema.relations || []).map((r, rIdx) => ({
-      id: r.id || `rel_${r.fromTable}_${r.fromColumn}_${r.toTable}_${r.toColumn}_${rIdx}_${Date.now()}`,
+    const sanitizedRelations = (newSchema.relations || []).map((r) => ({
+      id: r.id || `rel_${r.fromTable}_${r.fromColumn}_${r.toTable}_${r.toColumn}`,
       fromTable: r.fromTable,
       fromColumn: r.fromColumn,
       toTable: r.toTable,
@@ -360,17 +361,31 @@ export default function App() {
   }, [schema, handleRenameTable, handleDeleteTable, handleAddColumn, handleUpdateColumn, handleDeleteColumn]);
 
   const flowEdges = useMemo<Edge[]>(() => {
+    const normalize = (s: string) => s.toLowerCase().replace(/_/g, '').replace(/-/g, '');
+
     return schema.relations.map(rel => {
-      // Find table IDs
-      const fromTableObj = schema.tables.find(t => t.name === rel.fromTable);
-      const toTableObj = schema.tables.find(t => t.name === rel.toTable);
+      // Find table IDs using case and separator-tolerant lookup
+      const fromTableObj = schema.tables.find(t => 
+        normalize(t.name) === normalize(rel.fromTable) || 
+        normalize(t.id) === normalize(rel.fromTable)
+      );
+      const toTableObj = schema.tables.find(t => 
+        normalize(t.name) === normalize(rel.toTable) || 
+        normalize(t.id) === normalize(rel.toTable)
+      );
       
       const fromTableId = fromTableObj ? fromTableObj.id : rel.fromTable;
       const toTableId = toTableObj ? toTableObj.id : rel.toTable;
 
-      // Find column IDs
-      const fromColObj = fromTableObj?.columns.find(c => c.name === rel.fromColumn);
-      const toColObj = toTableObj?.columns.find(c => c.name === rel.toColumn);
+      // Find column IDs using case and separator-tolerant lookup
+      const fromColObj = fromTableObj?.columns.find(c => 
+        normalize(c.name) === normalize(rel.fromColumn) || 
+        normalize(c.id) === normalize(rel.fromColumn)
+      );
+      const toColObj = toTableObj?.columns.find(c => 
+        normalize(c.name) === normalize(rel.toColumn) || 
+        normalize(c.id) === normalize(rel.toColumn)
+      );
 
       const fromColId = fromColObj ? fromColObj.id : rel.fromColumn;
       const toColId = toColObj ? toColObj.id : rel.toColumn;
