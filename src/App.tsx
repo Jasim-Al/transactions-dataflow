@@ -106,15 +106,45 @@ export default function App() {
   const drizzleCode = useMemo(() => generateDrizzleSchema(schema), [schema]);
 
   const onSchemaGenerated = (newSchema: DatabaseSchema) => {
-    // Dynamically lay out nodes in a grid to avoid overlaps
-    const tablesWithPosition = newSchema.tables.map((t, idx) => ({
-      ...t,
-      x: t.x !== undefined ? t.x : 80 + (idx % 3) * 380,
-      y: t.y !== undefined ? t.y : 100 + Math.floor(idx / 3) * 320,
+    if (!newSchema || !newSchema.tables) return;
+
+    // Sanitize incoming schema from LLM (make sure all tables and columns have unique ids)
+    const sanitizedTables = newSchema.tables.map((t, idx) => {
+      const tableId = t.id || t.name || `table_${idx}_${Date.now()}`;
+      const tableName = t.name || tableId;
+
+      const sanitizedColumns = (t.columns || []).map((col, colIdx) => ({
+        id: col.id || `col_${tableName}_${col.name || colIdx}_${Date.now()}`,
+        name: col.name || `column_${colIdx + 1}`,
+        type: col.type || 'varchar',
+        primaryKey: !!col.primaryKey,
+        notNull: !!col.notNull,
+        unique: !!col.unique,
+        isIndex: !!col.isIndex,
+      }));
+
+      return {
+        id: tableId,
+        name: tableName,
+        columns: sanitizedColumns,
+        x: t.x !== undefined ? t.x : 80 + (idx % 3) * 380,
+        y: t.y !== undefined ? t.y : 100 + Math.floor(idx / 3) * 320,
+      };
+    });
+
+    // Also sanitize relations to ensure valid references
+    const sanitizedRelations = (newSchema.relations || []).map((r, rIdx) => ({
+      id: r.id || `rel_${r.fromTable}_${r.fromColumn}_${r.toTable}_${r.toColumn}_${rIdx}_${Date.now()}`,
+      fromTable: r.fromTable,
+      fromColumn: r.fromColumn,
+      toTable: r.toTable,
+      toColumn: r.toColumn,
+      type: r.type || 'many-to-one',
     }));
+
     setSchema({
-      tables: tablesWithPosition,
-      relations: newSchema.relations || [],
+      tables: sanitizedTables,
+      relations: sanitizedRelations,
     });
   };
 
