@@ -35,7 +35,7 @@ export function generateDrizzleSchema(schema: DatabaseSchema): string {
   }
 
   const importStatement = `import { ${Array.from(imports).sort().join(', ')} } from "drizzle-orm/pg-core";\n` +
-    `import { relations } from "drizzle-orm";\n\n`;
+    `import { defineRelations } from "drizzle-orm";\n\n`;
 
   let tableDefinitions = '';
 
@@ -100,53 +100,62 @@ export function generateDrizzleSchema(schema: DatabaseSchema): string {
   // Generate Relations definitions
   let relationsDefinitions = '';
   
-  schema.tables.forEach(table => {
-    const tableVar = toCamelCase(table.name);
-    
-    // Find all relations involving this table
-    const sourceRelations = schema.relations.filter(r => r.fromTable === table.name);
-    const targetRelations = schema.relations.filter(r => r.toTable === table.name);
-
-    if (sourceRelations.length > 0 || targetRelations.length > 0) {
-      let relationsCode = `export const ${tableVar}Relations = relations(${tableVar}, ({ one, many }) => ({\n`;
-      
-      // Relations where this table is the source (owns the foreign key)
-      sourceRelations.forEach(r => {
-        const relationName = toCamelCase(r.fromColumn.replace(/_id$/, ''));
-        const targetTableVar = toCamelCase(r.toTable);
-        
-        relationsCode += `  ${relationName}: one(${targetTableVar}, {\n` +
-          `    fields: [${tableVar}.${toCamelCase(r.fromColumn)}],\n` +
-          `    references: [${targetTableVar}.${toCamelCase(r.toColumn)}],\n` +
-          `  }),\n`;
-      });
-
-      // Relations where this table is the target (is referenced by others)
-      const relationsAdded = new Set<string>();
-      targetRelations.forEach(r => {
-        const sourceTableVar = toCamelCase(r.fromTable);
-        // Avoid duplicate field names on target relations
-        let fieldName = sourceTableVar;
-        if (r.type === 'one-to-many' || r.type === 'many-to-many') {
-          fieldName = sourceTableVar; // will use plural later or just source table name
-        }
-        
-        if (relationsAdded.has(fieldName)) {
-          fieldName += '_' + toCamelCase(r.fromColumn);
-        }
-        relationsAdded.add(fieldName);
-
-        if (r.type === 'one-to-one') {
-          relationsCode += `  ${fieldName}: one(${sourceTableVar}),\n`;
-        } else {
-          relationsCode += `  ${fieldName}: many(${sourceTableVar}),\n`;
-        }
-      });
-
-      relationsCode += `}));\n\n`;
-      relationsDefinitions += relationsCode;
-    }
+  const tablesWithRelations = schema.tables.filter(table => {
+    const hasSource = schema.relations.some(r => r.fromTable === table.name);
+    const hasTarget = schema.relations.some(r => r.toTable === table.name);
+    return hasSource || hasTarget;
   });
+
+  if (tablesWithRelations.length > 0) {
+    relationsDefinitions += `export const schemaRelations = defineRelations({\n`;
+    tablesWithRelations.forEach(table => {
+      relationsDefinitions += `  ${toCamelCase(table.name)},\n`;
+    });
+    relationsDefinitions += `}, (r) => ({\n`;
+
+    schema.tables.forEach(table => {
+      const tableVar = toCamelCase(table.name);
+      const sourceRelations = schema.relations.filter(r => r.fromTable === table.name);
+      const targetRelations = schema.relations.filter(r => r.toTable === table.name);
+
+      if (sourceRelations.length > 0 || targetRelations.length > 0) {
+        relationsDefinitions += `  ${tableVar}: {\n`;
+        
+        // Relations where this table is the source (owns the foreign key)
+        sourceRelations.forEach(r => {
+          const relationName = toCamelCase(r.fromColumn.replace(/_id$/, ''));
+          const targetTableVar = toCamelCase(r.toTable);
+          
+          relationsDefinitions += `    ${relationName}: r.one(${targetTableVar}, {\n` +
+            `      fields: [${tableVar}.${toCamelCase(r.fromColumn)}],\n` +
+            `      references: [${targetTableVar}.${toCamelCase(r.toColumn)}],\n` +
+            `    }),\n`;
+        });
+
+        // Relations where this table is the target (is referenced by others)
+        const relationsAdded = new Set<string>();
+        targetRelations.forEach(r => {
+          const sourceTableVar = toCamelCase(r.fromTable);
+          let fieldName = sourceTableVar;
+          
+          if (relationsAdded.has(fieldName)) {
+            fieldName += '_' + toCamelCase(r.fromColumn);
+          }
+          relationsAdded.add(fieldName);
+
+          if (r.type === 'one-to-one') {
+            relationsDefinitions += `    ${fieldName}: r.one(${sourceTableVar}),\n`;
+          } else {
+            relationsDefinitions += `    ${fieldName}: r.many(${sourceTableVar}),\n`;
+          }
+        });
+
+        relationsDefinitions += `  },\n`;
+      }
+    });
+
+    relationsDefinitions += `}));\n\n`;
+  }
 
   return imports.size > 0 
     ? `${importStatement}${tableDefinitions}${relationsDefinitions}`.trim() + '\n'
