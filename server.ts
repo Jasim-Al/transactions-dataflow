@@ -47,6 +47,11 @@ Important Instructions:
   2. Extract the nested structure into its own table, creating a relational linkage with a foreign key and relation configuration.
 - ONLY use "jsonb" when the column stores highly arbitrary, unstructured, or dynamically changing key-value collections that cannot be represented as regular fields or relations.
 - Automatically add primary keys (e.g. an "id" column of type "serial" or "uuid") if not specified.
+- MongoDB/Mongoose Schema Translation Rules:
+  1. Map Mongoose Schemas/Collections to individual PostgreSQL tables (e.g., Schema 'User' -> table "users").
+  2. Parse reference keys: Identify fields configured with `ref: 'ModelName'` or `type: Schema.Types.ObjectId`. These are foreign keys referencing the primary key of the target table.
+  3. Create explicit relational fields: For every such reference, add an integer or uuid column in the source table named like `{fieldName}_id` or `{targetTable}_id` (e.g. `author: { type: ObjectId, ref: 'User' }` must map to column `author_id` in the source table).
+  4. Ensure every created reference column has a corresponding mapping entry in the "relations" array pointing to the target table's primary key (usually "id").
 - Relational Reference Mapping (relations array):
   You MUST identify all foreign key linkages and represent them in the "relations" array.
   * For every relationship, define:
