@@ -75,10 +75,18 @@ function getModelInstance(provider: string, apiKey: string, modelName?: string) 
 async function handleGenerate(req: Request): Promise<Response> {
   try {
     const body = await req.json();
-    const { prompt, provider = "ollama", apiKey = "", model = "" } = body;
+    const { prompt, currentSchema, provider = "ollama", apiKey = "", model = "" } = body;
 
     if (!prompt) {
       return Response.json({ error: "Prompt is required" }, { status: 400 });
+    }
+
+    let userMessageContent = prompt;
+    if (currentSchema && currentSchema.tables && currentSchema.tables.length > 0) {
+      userMessageContent = `Current database schema:\n${JSON.stringify(currentSchema, null, 2)}\n\n` +
+        `User instruction: ${prompt}\n\n` +
+        `IMPORTANT: You MUST preserve all existing tables, columns, types, and relations from the current schema unless the user explicitly requests to modify or delete them. ` +
+        `Ensure any new tables or relations you add connect properly with the existing tables and maintain reference integrity.`;
     }
 
     if (provider === "ollama") {
@@ -91,7 +99,7 @@ async function handleGenerate(req: Request): Promise<Response> {
           model: modelName,
           messages: [
             { role: "system", content: GENERATE_SYSTEM_PROMPT },
-            { role: "user", content: prompt }
+            { role: "user", content: userMessageContent }
           ],
           stream: true,
           format: "json",
@@ -175,7 +183,7 @@ async function handleGenerate(req: Request): Promise<Response> {
       const { textStream } = await streamText({
         model: modelInstance,
         system: GENERATE_SYSTEM_PROMPT,
-        prompt: prompt,
+        prompt: userMessageContent,
       });
 
       const encoder = new TextEncoder();

@@ -520,6 +520,7 @@ export default function App() {
       <div className="flex-1 flex overflow-hidden h-[calc(100vh-65px)] min-h-0">
         {/* Sidebar Generator */}
         <SchemaGeneratorPanel 
+          currentSchema={schema}
           onSchemaGenerated={onSchemaGenerated} 
           config={llmConfig} 
           setConfig={setLlmConfig} 

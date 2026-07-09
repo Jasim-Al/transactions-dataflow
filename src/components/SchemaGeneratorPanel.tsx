@@ -3,6 +3,7 @@ import { Settings, Sparkles, AlertCircle, Key, Cpu, HelpCircle } from 'lucide-re
 import type { LLMConfig, DatabaseSchema } from '../types/schema';
 
 interface SchemaGeneratorPanelProps {
+  currentSchema: DatabaseSchema;
   onSchemaGenerated: (schema: DatabaseSchema) => void;
   config: LLMConfig;
   setConfig: React.Dispatch<React.SetStateAction<LLMConfig>>;
@@ -88,6 +89,7 @@ const repairJSON = (rawText: string): string => {
 };
 
 export const SchemaGeneratorPanel: React.FC<SchemaGeneratorPanelProps> = ({ 
+  currentSchema,
   onSchemaGenerated, 
   config, 
   setConfig,
@@ -116,6 +118,7 @@ export const SchemaGeneratorPanel: React.FC<SchemaGeneratorPanelProps> = ({
         },
         body: JSON.stringify({
           prompt: prompt.trim(),
+          currentSchema,
           provider: config.provider,
           apiKey: config.apiKey,
           model: config.model,
