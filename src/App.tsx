@@ -549,7 +549,7 @@ export default function App() {
                 size={1} 
                 color="rgba(120, 119, 198, 0.15)" 
               />
-              <Controls className="!bg-card !border-border !rounded-xl !shadow-lg text-foreground fill-foreground" />
+              <Controls />
             </ReactFlow>
           </ReactFlowProvider>
 
