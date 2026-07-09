@@ -284,6 +284,7 @@ ${drizzleSchema}
 // Serve static assets in production, otherwise proxy handles api routes
 const server = Bun.serve({
   port: PORT,
+  idleTimeout: 255, // Allow connections to stream up to ~4 minutes before idling out
   async fetch(req) {
     const url = new URL(req.url);
 
