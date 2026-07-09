@@ -281,18 +281,29 @@ export default function App() {
 
   // Node Change callback for drags
   const onNodesChange = useCallback((changes: NodeChange[]) => {
+    const positionChanges = changes.filter(c => c.type === 'position');
+    if (positionChanges.length === 0) return;
+
     setSchema(prev => {
+      let changed = false;
       const updatedTables = prev.tables.map(table => {
-        const matchingChange = changes.find((c: any) => c.id === table.id && c.type === 'position');
+        const matchingChange = positionChanges.find((c: any) => c.id === table.id);
         if (matchingChange && 'position' in matchingChange && matchingChange.position) {
-          return {
-            ...table,
-            x: matchingChange.position.x,
-            y: matchingChange.position.y
-          };
+          const newX = matchingChange.position.x;
+          const newY = matchingChange.position.y;
+          if (newX !== table.x || newY !== table.y) {
+            changed = true;
+            return {
+              ...table,
+              x: newX,
+              y: newY
+            };
+          }
         }
         return table;
       });
+
+      if (!changed) return prev;
       return { ...prev, tables: updatedTables };
     });
   }, []);
