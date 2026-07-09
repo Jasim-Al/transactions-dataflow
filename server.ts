@@ -90,7 +90,12 @@ async function handleGenerate(req: Request): Promise<Response> {
             { role: "user", content: prompt }
           ],
           stream: false,
-          format: "json"
+          format: "json",
+          options: {
+            num_ctx: 16384,
+            num_predict: 8192,
+            temperature: 0.2
+          }
         })
       });
 
@@ -290,7 +295,12 @@ ${drizzleSchema}
             { role: "system", content: translateSystemPrompt },
             { role: "user", content: userPrompt }
           ],
-          stream: false
+          stream: false,
+          options: {
+            num_ctx: 16384,
+            num_predict: 8192,
+            temperature: 0.2
+          }
         })
       });
 
