@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Sparkles, AlertCircle, Key, Cpu, HelpCircle, ChevronUp } from 'lucide-react';
+import { Settings, Sparkles, AlertCircle, Key, Cpu, HelpCircle, ChevronLeft } from 'lucide-react';
 import type { LLMConfig, DatabaseSchema } from '../types/schema';
 
 interface SchemaGeneratorPanelProps {
@@ -255,7 +255,7 @@ export const SchemaGeneratorPanel: React.FC<SchemaGeneratorPanelProps> = ({
               className="p-1.5 rounded-lg hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               title="Collapse Sidebar"
             >
-              <ChevronUp className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4" />
             </button>
           )}
         </div>
