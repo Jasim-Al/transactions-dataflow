@@ -351,8 +351,31 @@ body {
   stroke: hsl(var(--accent)) !important;
 }
 
+/* Light Mode Background Overrides */
+.light .gradient-bg {
+  background-color: #f8f9fa !important;
+}
+
 .light .gradient-blob {
-  opacity: 0.18;
+  mix-blend-mode: multiply !important;
+  opacity: 0.55 !important;
+}
+
+.light .gradient-blob-1 {
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.12) 0%, rgba(255, 255, 255, 0) 70%) !important;
+}
+
+.light .gradient-blob-2 {
+  background: radial-gradient(circle, rgba(243, 148, 68, 0.12) 0%, rgba(255, 255, 255, 0) 70%) !important;
+}
+
+.light .gradient-blob-3 {
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.08) 0%, rgba(255, 255, 255, 0) 70%) !important;
+}
+
+.light .bg-grain {
+  opacity: 0.035 !important;
+  mix-blend-mode: multiply !important;
 }
 
 .light ::-webkit-scrollbar-thumb {
