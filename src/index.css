@@ -65,6 +65,30 @@
   --radius: 1rem;
 }
 
+.light {
+  --background: 210 20% 98%;
+  --foreground: 210 10% 8%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 210 10% 8%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 210 10% 8%;
+
+  --primary: 27 88% 54%;
+  --primary-foreground: 0 0% 98%;
+
+  --secondary: 210 15% 91%;
+  --secondary-foreground: 210 10% 8%;
+
+  --muted: 210 10% 94%;
+  --muted-foreground: 210 5% 42%;
+
+  --border: 210 10% 0% / 0.08;
+  --input: 210 10% 0% / 0.08;
+  --ring: 27 88% 54%;
+}
+
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
@@ -294,4 +318,55 @@ body {
 /* Remove round edges for all elements globally */
 *, ::before, ::after {
   border-radius: 0px !important;
+}
+
+/* Light Mode Overrides for Panels and Nodes */
+.light .glass-panel {
+  background-color: rgba(255, 255, 255, 0.65) !important;
+  backdrop-filter: blur(25px) saturate(180%) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 15px 40px -10px rgba(0, 0, 0, 0.08) !important;
+}
+
+.light .react-flow__node-table {
+  background-color: rgba(255, 255, 255, 0.75) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.08) !important;
+}
+
+.light .react-flow__node-table:hover {
+  border-color: rgba(243, 148, 68, 0.45) !important;
+  box-shadow: 0 0 25px rgba(243, 148, 68, 0.12) !important;
+}
+
+.light .react-flow__handle {
+  border: 2px solid hsl(var(--background)) !important;
+}
+
+.light .react-flow__edge-path {
+  stroke: hsl(var(--muted-foreground)) !important;
+}
+
+.light .react-flow__edge.selected .react-flow__edge-path {
+  stroke: hsl(var(--accent)) !important;
+}
+
+.light .gradient-blob {
+  opacity: 0.18;
+}
+
+.light ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(243, 148, 68, 0.45);
+}
+
+.light .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(243, 148, 68, 0.25);
+}
+
+.light .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(243, 148, 68, 0.5);
 }

@@ -15,7 +15,7 @@ import type {
   Node
 } from '@xyflow/react';
 
-import { Code, Trash2, ChevronUp, ChevronDown, Workflow, Eraser, Compass, FileCode2, PlusCircle } from 'lucide-react';
+import { Code, Trash2, ChevronUp, ChevronDown, Workflow, Eraser, Compass, FileCode2, PlusCircle, Sun, Moon } from 'lucide-react';
 import type { DatabaseSchema, Table, Column, Relation, LLMConfig } from './types/schema';
 import { TableNode } from './components/TableNode';
 import { SchemaGeneratorPanel } from './components/SchemaGeneratorPanel';
@@ -109,6 +109,16 @@ export default function App() {
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
   const [isHeaderOpen, setIsHeaderOpen] = useState(true);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === 'light') {
+      root.classList.add('light');
+    } else {
+      root.classList.remove('light');
+    }
+  }, [theme]);
 
   // Reconstruct schema object live from current nodes and edges
   const schema = useMemo<DatabaseSchema>(() => {
@@ -498,7 +508,7 @@ export default function App() {
   const rightTopClass = isHeaderOpen ? 'top-[96px]' : 'top-6';
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-[#040505] text-foreground select-none">
+    <div className="relative w-screen h-screen overflow-hidden bg-background text-foreground select-none">
       {/* Animated Textured Background */}
       <div className="gradient-bg">
         <div className="gradient-blob gradient-blob-1" />
@@ -527,7 +537,7 @@ export default function App() {
               variant={BackgroundVariant.Dots} 
               gap={16} 
               size={1} 
-              color="rgba(243, 148, 68, 0.08)" 
+              color={theme === 'light' ? 'rgba(243, 148, 68, 0.15)' : 'rgba(243, 148, 68, 0.08)'} 
             />
             <Controls />
           </ReactFlow>
@@ -538,7 +548,7 @@ export default function App() {
       {!isHeaderOpen && (
         <button
           onClick={() => setIsHeaderOpen(true)}
-          className="fixed top-0 left-1/2 -translate-x-1/2 px-4 py-1.5 z-30 bg-[#040505]/60 border-b border-x border-white/10 backdrop-blur-md rounded-b-2xl cursor-pointer hover:bg-white/5 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1 shadow-lg text-[9px] uppercase font-bold tracking-wider animate-in slide-in-from-top-full duration-300"
+          className="fixed top-0 left-1/2 -translate-x-1/2 px-4 py-1.5 z-30 bg-background/60 border-b border-x border-border backdrop-blur-md rounded-b-2xl cursor-pointer hover:bg-secondary/40 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1 shadow-lg text-[9px] uppercase font-bold tracking-wider animate-in slide-in-from-top-full duration-300"
           title="Expand Header"
         >
           <ChevronDown className="w-3.5 h-3.5" /> Expand Menu
@@ -611,6 +621,14 @@ export default function App() {
           >
             <FileCode2 className="w-4 h-4" />
             Export Schema
+          </button>
+
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="flex items-center justify-center p-1.5 bg-secondary hover:bg-secondary/80 text-foreground rounded-xl border border-border transition-all cursor-pointer"
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-sky-400" />}
           </button>
 
           <div className="w-px h-6 bg-border mx-1" />
@@ -686,7 +704,7 @@ export default function App() {
 
         {/* Content */}
         {isRightPanelOpen && (
-          <div className="flex-1 p-4 font-mono text-[10px] leading-relaxed text-foreground overflow-y-auto bg-[#040505]/10 select-text custom-scrollbar max-h-[calc(100vh-200px)]">
+          <div className="flex-1 p-4 font-mono text-[10px] leading-relaxed text-foreground overflow-y-auto bg-secondary/20 select-text custom-scrollbar max-h-[calc(100vh-200px)]">
             {drizzleCode ? (
               <pre className="whitespace-pre-wrap">{drizzleCode}</pre>
             ) : (
