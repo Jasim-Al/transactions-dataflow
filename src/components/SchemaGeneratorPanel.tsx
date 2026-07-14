@@ -225,7 +225,7 @@ export const SchemaGeneratorPanel: React.FC<SchemaGeneratorPanelProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-card/40 border-r border-border backdrop-blur-md w-80 min-w-[320px] max-w-[360px] overflow-y-auto">
+    <div className="flex flex-col h-full w-full bg-transparent overflow-y-auto select-none">
       {/* Header */}
       <div className="p-4 border-b border-border/80 flex items-center justify-between">
         <div className="flex items-center gap-2">

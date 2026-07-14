@@ -15,7 +15,7 @@ import type {
   Node
 } from '@xyflow/react';
 
-import { Database, Plus, Code, Share2, Trash2, Info } from 'lucide-react';
+import { Database, Plus, Code, Share2, Trash2, Info, ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from 'lucide-react';
 import type { DatabaseSchema, Table, Column, Relation, LLMConfig } from './types/schema';
 import { TableNode } from './components/TableNode';
 import { SchemaGeneratorPanel } from './components/SchemaGeneratorPanel';
@@ -105,6 +105,10 @@ export default function App() {
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState('');
+
+  const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
+  const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
+  const [isHeaderOpen, setIsHeaderOpen] = useState(true);
 
   // Reconstruct schema object live from current nodes and edges
   const schema = useMemo<DatabaseSchema>(() => {
@@ -490,17 +494,68 @@ export default function App() {
     setSelectedEdgeId(null);
   };
 
+  const leftTopClass = isHeaderOpen ? 'top-24' : 'top-4';
+  const rightTopClass = isHeaderOpen ? 'top-24' : 'top-4';
+
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground flex-col">
+    <div className="relative w-screen h-screen overflow-hidden bg-[#040505] text-foreground select-none">
+      {/* Animated Textured Background */}
+      <div className="gradient-bg">
+        <div className="gradient-blob gradient-blob-1" />
+        <div className="gradient-blob gradient-blob-2" />
+        <div className="gradient-blob gradient-blob-3" />
+        <div className="bg-grain" />
+      </div>
+
+      {/* Fullscreen Dataflow Canvas */}
+      <div className="absolute inset-0 w-full h-full z-0">
+        <ReactFlowProvider>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onEdgeClick={onEdgeClick}
+            className="bg-transparent"
+            fitView
+            minZoom={0.2}
+            maxZoom={2}
+          >
+            <Background 
+              variant={BackgroundVariant.Dots} 
+              gap={16} 
+              size={1} 
+              color="rgba(243, 148, 68, 0.08)" 
+            />
+            <Controls />
+          </ReactFlow>
+        </ReactFlowProvider>
+      </div>
+
+      {/* Collapsible Header Expand Trigger */}
+      {!isHeaderOpen && (
+        <button
+          onClick={() => setIsHeaderOpen(true)}
+          className="fixed top-0 left-1/2 -translate-x-1/2 px-4 py-1.5 z-30 bg-[#040505]/60 border-b border-x border-white/10 backdrop-blur-md rounded-b-2xl cursor-pointer hover:bg-white/5 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1 shadow-lg text-[9px] uppercase font-bold tracking-wider animate-in slide-in-from-top-full duration-300"
+          title="Expand Header"
+        >
+          <ChevronDown className="w-3.5 h-3.5" /> Expand Menu
+        </button>
+      )}
+
       {/* Top Navbar */}
-      <header className="flex items-center justify-between px-6 py-3.5 bg-card/50 border-b border-border backdrop-blur-md z-10">
+      <header className={`fixed top-4 left-4 right-4 z-30 transition-all duration-500 ease-out flex items-center justify-between px-6 py-3.5 rounded-2xl glass-panel shadow-2xl ${
+        isHeaderOpen ? 'translate-y-0 opacity-100' : 'translate-y-[-140%] opacity-0 pointer-events-none'
+      }`}>
         <div className="flex items-center gap-3">
           <div className="p-2 bg-primary/20 rounded-xl text-primary animate-pulse">
             <Database className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-sm font-black tracking-wider uppercase text-foreground">Relational Dataflow</h1>
-            <p className="text-[10px] text-muted-foreground">Interactive Database Schema Modeler</p>
+            <h1 className="text-sm font-black tracking-wider uppercase text-foreground leading-tight">Relational Dataflow</h1>
+            <p className="text-[10px] text-muted-foreground leading-none mt-0.5">Interactive Database Schema Modeler</p>
           </div>
         </div>
 
@@ -511,14 +566,14 @@ export default function App() {
               <span className="text-[10px] uppercase font-bold text-muted-foreground">Relation Selected:</span>
               <button
                 onClick={handleToggleRelationType}
-                className="text-xs px-2 py-0.5 bg-primary/20 border border-primary/30 rounded text-primary font-bold hover:bg-primary/30 transition-all cursor-pointer"
+                className="text-[10px] px-2 py-0.5 bg-primary/20 border border-primary/30 rounded text-primary font-bold hover:bg-primary/30 transition-all cursor-pointer"
                 title="Toggle Relationship Type (1:1, 1:N, N:1, N:M)"
               >
                 Toggle Type
               </button>
               <button
                 onClick={handleDeleteSelectedRelation}
-                className="text-xs px-2 py-0.5 bg-destructive/20 border border-destructive/30 rounded text-destructive hover:bg-destructive/30 transition-all cursor-pointer flex items-center gap-1"
+                className="text-[10px] px-2 py-0.5 bg-destructive/20 border border-destructive/30 rounded text-destructive hover:bg-destructive/30 transition-all cursor-pointer flex items-center gap-1"
                 title="Delete Relation"
               >
                 <Trash2 className="w-3 h-3" /> Remove
@@ -528,21 +583,21 @@ export default function App() {
 
           <button
             onClick={handleAddTable}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary hover:bg-secondary/85 text-foreground text-xs font-semibold rounded-xl border border-border hover:border-muted-foreground transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground text-xs font-semibold rounded-xl border border-border transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4 text-primary" />
             Add Table
           </button>
           <button
             onClick={handleClearAll}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary hover:bg-secondary/85 text-foreground text-xs font-semibold rounded-xl border border-border hover:border-muted-foreground transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground text-xs font-semibold rounded-xl border border-border transition-all cursor-pointer"
           >
             <Trash2 className="w-4 h-4 text-destructive" />
             Clear Canvas
           </button>
           <button
             onClick={handleLoadSample}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary hover:bg-secondary/85 text-foreground text-xs font-semibold rounded-xl border border-border hover:border-muted-foreground transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground text-xs font-semibold rounded-xl border border-border transition-all cursor-pointer"
           >
             <Info className="w-4 h-4 text-sky-400" />
             Load Sample
@@ -557,99 +612,137 @@ export default function App() {
             <Share2 className="w-4 h-4" />
             Export Schema
           </button>
+
+          <div className="w-px h-6 bg-border mx-1" />
+
+          <button 
+            onClick={() => setIsHeaderOpen(false)}
+            className="p-1 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            title="Collapse Header"
+          >
+            <ChevronUp className="w-4 h-4" />
+          </button>
         </div>
       </header>
 
-      {/* Main Workspace Layout */}
-      <div className="flex-1 flex overflow-hidden h-[calc(100vh-65px)] min-h-0">
-        {/* Sidebar Generator */}
-        <SchemaGeneratorPanel 
-          currentSchema={schema}
-          onSchemaGenerated={onSchemaGenerated} 
-          config={llmConfig} 
-          setConfig={setLlmConfig} 
-          isStreaming={isStreaming}
-          setIsStreaming={setIsStreaming}
-          streamingText={streamingText}
-          setStreamingText={setStreamingText}
-        />
+      {/* Floating Collapsed Left Sidebar Trigger */}
+      {!isLeftPanelOpen && (
+        <button
+          onClick={() => setIsLeftPanelOpen(true)}
+          className={`fixed ${leftTopClass} left-4 bottom-4 w-12 z-20 glass-panel rounded-2xl cursor-pointer hover:bg-white/5 text-muted-foreground hover:text-foreground transition-all duration-500 flex flex-col items-center justify-center gap-4 py-6 shadow-xl animate-in slide-in-from-left-full`}
+          title="Expand Schema Generator"
+        >
+          <ChevronRight className="w-5 h-5 text-primary" />
+          <span className="text-[9px] uppercase font-black tracking-widest [writing-mode:vertical-lr] text-muted-foreground/60 select-none">
+            Generator
+          </span>
+        </button>
+      )}
 
-        {/* Dataflow Canvas */}
-        <div className="flex-1 h-full w-full relative" style={{ height: '100%', width: '100%', minHeight: '300px' }}>
-          <ReactFlowProvider>
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              nodeTypes={nodeTypes}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onConnect={onConnect}
-              onEdgeClick={onEdgeClick}
-              className="bg-background"
-            >
-              <Background 
-                variant={BackgroundVariant.Dots} 
-                gap={16} 
-                size={1} 
-                color="rgba(120, 119, 198, 0.15)" 
-              />
-              <Controls />
-            </ReactFlow>
-          </ReactFlowProvider>
-
-          {/* Futuristic Floating Stream Overlay */}
-          {isStreaming && (
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 select-none">
-              <div className="bg-card border border-primary/25 rounded-2xl p-6 w-full max-w-2xl shadow-[0_0_50px_rgba(120,119,198,0.15)] flex flex-col gap-4 animate-in fade-in zoom-in duration-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-5 h-5 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
-                    <div>
-                      <h3 className="text-sm font-semibold text-foreground">AI Schema Generation in Progress</h3>
-                      <p className="text-[10px] text-muted-foreground">Streaming real-time structured JSON schema from model</p>
-                    </div>
-                  </div>
-                  <div className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-primary animate-pulse">
-                    Live Stream
-                  </div>
-                </div>
-                
-                <div className="relative">
-                  <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 rounded bg-black/40 border border-border text-[9px] font-mono text-muted-foreground">
-                    <span>{streamingText.length} bytes</span>
-                  </div>
-                  <pre className="font-mono text-xs text-indigo-300 bg-black/90 p-4 rounded-xl border border-border/80 overflow-y-auto max-h-[300px] text-left leading-relaxed select-text shadow-inner scrollbar-thin">
-                    <code>{streamingText || 'Connecting to model...'}</code>
-                  </pre>
-                </div>
-              </div>
-            </div>
-          )}
+      {/* Left Sidebar Generator */}
+      <div className={`fixed ${leftTopClass} left-4 bottom-4 z-20 w-80 glass-panel rounded-2xl flex flex-col transition-all duration-500 ease-out ${
+        isLeftPanelOpen ? 'translate-x-0 opacity-100' : 'translate-x-[-340px] opacity-0 pointer-events-none'
+      }`}>
+        <div className="absolute top-4 right-4 flex items-center gap-1.5 z-30">
+          <button
+            onClick={() => setIsLeftPanelOpen(false)}
+            className="p-1.5 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            title="Collapse Sidebar"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
         </div>
 
-        {/* Real-time Code Preview Panel */}
-        <div className="w-96 min-w-[340px] max-w-[400px] border-l border-border bg-card/25 backdrop-blur-md flex flex-col h-full overflow-hidden">
-          <div className="p-4 border-b border-border/80 flex items-center justify-between bg-card/40">
-            <div className="flex items-center gap-2">
-              <Code className="w-4 h-4 text-primary" />
-              <h2 className="text-xs font-bold tracking-wide text-foreground">Live Drizzle Schema Preview</h2>
-            </div>
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <SchemaGeneratorPanel 
+            currentSchema={schema}
+            onSchemaGenerated={onSchemaGenerated} 
+            config={llmConfig} 
+            setConfig={setLlmConfig} 
+            isStreaming={isStreaming}
+            setIsStreaming={setIsStreaming}
+            streamingText={streamingText}
+            setStreamingText={setStreamingText}
+          />
+        </div>
+      </div>
+
+      {/* Floating Collapsed Right Sidebar Trigger */}
+      {!isRightPanelOpen && (
+        <button
+          onClick={() => setIsRightPanelOpen(true)}
+          className={`fixed ${rightTopClass} right-4 bottom-4 w-12 z-20 glass-panel rounded-2xl cursor-pointer hover:bg-white/5 text-muted-foreground hover:text-foreground transition-all duration-500 flex flex-col items-center justify-center gap-4 py-6 shadow-xl animate-in slide-in-from-right-full`}
+          title="Expand Drizzle Preview"
+        >
+          <ChevronLeft className="w-5 h-5 text-primary" />
+          <span className="text-[9px] uppercase font-black tracking-widest [writing-mode:vertical-lr] text-muted-foreground/60 select-none">
+            Drizzle Schema
+          </span>
+        </button>
+      )}
+
+      {/* Right Sidebar Drizzle Preview */}
+      <div className={`fixed ${rightTopClass} right-4 bottom-4 z-20 w-96 glass-panel rounded-2xl flex flex-col transition-all duration-500 ease-out overflow-hidden ${
+        isRightPanelOpen ? 'translate-x-0 opacity-100' : 'translate-x-[410px] opacity-0 pointer-events-none'
+      }`}>
+        <div className="p-4 border-b border-border/80 flex items-center justify-between bg-[#040505]/40 select-none">
+          <div className="flex items-center gap-2">
+            <Code className="w-4 h-4 text-primary" />
+            <h2 className="text-xs font-bold tracking-wide text-foreground">Live Drizzle Schema Preview</h2>
+          </div>
+          <div className="flex items-center gap-2">
             <span className="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
               Syncing
             </span>
-          </div>
-
-          <div className="flex-1 p-4 font-mono text-[10px] leading-relaxed text-foreground overflow-y-auto bg-background/30 select-text">
-            {drizzleCode ? (
-              <pre>{drizzleCode}</pre>
-            ) : (
-              <div className="text-muted-foreground/60 italic text-center mt-20 text-xs">
-                No tables in schema. Click 'Load Sample' or 'Add Table' to preview code.
-              </div>
-            )}
+            <button
+              onClick={() => setIsRightPanelOpen(false)}
+              className="p-1 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              title="Collapse Sidebar"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
+
+        <div className="flex-1 p-4 font-mono text-[10px] leading-relaxed text-foreground overflow-y-auto bg-[#040505]/10 select-text scrollbar-thin">
+          {drizzleCode ? (
+            <pre className="whitespace-pre-wrap">{drizzleCode}</pre>
+          ) : (
+            <div className="text-muted-foreground/60 italic text-center mt-20 text-xs">
+              No tables in schema. Click 'Load Sample' or 'Add Table' to preview code.
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Futuristic Floating Stream Overlay */}
+      {isStreaming && (
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 select-none animate-in fade-in duration-300">
+          <div className="bg-card/80 border border-primary/20 rounded-2xl p-6 w-full max-w-2xl shadow-[0_0_50px_rgba(243,148,68,0.1)] flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200 backdrop-blur-md">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-5 h-5 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground">AI Schema Generation in Progress</h3>
+                  <p className="text-[10px] text-muted-foreground">Streaming real-time structured JSON schema from model</p>
+                </div>
+              </div>
+              <div className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-primary animate-pulse">
+                Live Stream
+              </div>
+            </div>
+            
+            <div className="relative">
+              <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 rounded bg-black/40 border border-border text-[9px] font-mono text-muted-foreground">
+                <span>{streamingText.length} bytes</span>
+              </div>
+              <pre className="font-mono text-xs text-orange-200 bg-black/90 p-4 rounded-xl border border-border/80 overflow-y-auto max-h-[300px] text-left leading-relaxed select-text shadow-inner scrollbar-thin">
+                <code>{streamingText || 'Connecting to model...'}</code>
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Export Schema Dialog */}
       <ExportModal 
