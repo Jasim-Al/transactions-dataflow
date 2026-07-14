@@ -15,7 +15,7 @@ import type {
   Node
 } from '@xyflow/react';
 
-import { Database, Plus, Code, Share2, Trash2, Info, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Database, Plus, Code, Share2, Trash2, Info, ChevronUp, ChevronDown } from 'lucide-react';
 import type { DatabaseSchema, Table, Column, Relation, LLMConfig } from './types/schema';
 import { TableNode } from './components/TableNode';
 import { SchemaGeneratorPanel } from './components/SchemaGeneratorPanel';
@@ -494,9 +494,8 @@ export default function App() {
     setSelectedEdgeId(null);
   };
 
-  const leftTopClass = isHeaderOpen ? 'top-24' : 'top-4';
-  const rightTopClass = isHeaderOpen ? 'top-24' : 'top-4';
-  const collapsedTopClass = isHeaderOpen ? 'top-[84px]' : 'top-4';
+  const leftTopClass = isHeaderOpen ? 'top-[96px]' : 'top-6';
+  const rightTopClass = isHeaderOpen ? 'top-[96px]' : 'top-6';
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#040505] text-foreground select-none">
@@ -547,7 +546,7 @@ export default function App() {
       )}
 
       {/* Top Navbar */}
-      <header className={`fixed top-4 left-4 right-4 z-30 transition-all duration-500 ease-out flex items-center justify-between px-6 py-3.5 rounded-2xl glass-panel shadow-2xl ${
+      <header className={`fixed top-6 left-6 right-6 z-30 transition-all duration-500 ease-out flex items-center justify-between px-6 py-3.5 rounded-2xl glass-panel shadow-2xl ${
         isHeaderOpen ? 'translate-y-0 opacity-100' : 'translate-y-[-140%] opacity-0 pointer-events-none'
       }`}>
         <div className="flex items-center gap-3">
@@ -626,83 +625,75 @@ export default function App() {
         </div>
       </header>
 
-      {/* Floating Collapsed Left Sidebar Trigger */}
-      {!isLeftPanelOpen && (
-        <button
-          onClick={() => setIsLeftPanelOpen(true)}
-          className={`fixed ${collapsedTopClass} left-4 z-30 glass-panel px-4 py-2 rounded-xl cursor-pointer hover:bg-white/5 text-muted-foreground hover:text-foreground transition-all duration-300 flex items-center gap-2 shadow-lg text-xs font-bold animate-in fade-in zoom-in-95 duration-200`}
-          title="Expand Schema Generator"
-        >
-          <Database className="w-4 h-4 text-primary animate-pulse" />
-          <span>Generator</span>
-          <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
-        </button>
-      )}
-
       {/* Left Sidebar Generator */}
-      <div className={`fixed ${leftTopClass} left-4 bottom-4 z-20 w-80 glass-panel rounded-2xl flex flex-col transition-all duration-500 ease-out ${
-        isLeftPanelOpen ? 'translate-x-0 opacity-100' : 'translate-x-[-340px] opacity-0 pointer-events-none'
+      <div className={`fixed ${leftTopClass} left-6 z-20 glass-panel rounded-2xl flex flex-col transition-all duration-500 ease-out ${
+        isLeftPanelOpen ? 'w-[360px] h-fit max-h-[calc(100vh-140px)]' : 'w-[240px] h-[56px] overflow-hidden'
       }`}>
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          <SchemaGeneratorPanel 
-            currentSchema={schema}
-            onSchemaGenerated={onSchemaGenerated} 
-            config={llmConfig} 
-            setConfig={setLlmConfig} 
-            isStreaming={isStreaming}
-            setIsStreaming={setIsStreaming}
-            streamingText={streamingText}
-            setStreamingText={setStreamingText}
-            onCollapse={() => setIsLeftPanelOpen(false)}
-          />
-        </div>
+        <SchemaGeneratorPanel 
+          currentSchema={schema}
+          onSchemaGenerated={onSchemaGenerated} 
+          config={llmConfig} 
+          setConfig={setLlmConfig} 
+          isStreaming={isStreaming}
+          setIsStreaming={setIsStreaming}
+          streamingText={streamingText}
+          setStreamingText={setStreamingText}
+          isCollapsed={!isLeftPanelOpen}
+          onToggleCollapse={() => setIsLeftPanelOpen(!isLeftPanelOpen)}
+        />
       </div>
 
-      {/* Floating Collapsed Right Sidebar Trigger */}
-      {!isRightPanelOpen && (
-        <button
-          onClick={() => setIsRightPanelOpen(true)}
-          className={`fixed ${collapsedTopClass} right-4 z-30 glass-panel px-4 py-2 rounded-xl cursor-pointer hover:bg-white/5 text-muted-foreground hover:text-foreground transition-all duration-300 flex items-center gap-2 shadow-lg text-xs font-bold animate-in fade-in zoom-in-95 duration-200`}
-          title="Expand Drizzle Preview"
-        >
-          <ChevronLeft className="w-3.5 h-3.5 mr-0.5" />
-          <Code className="w-4 h-4 text-primary" />
-          <span>Drizzle Schema</span>
-        </button>
-      )}
-
       {/* Right Sidebar Drizzle Preview */}
-      <div className={`fixed ${rightTopClass} right-4 bottom-4 z-20 w-96 glass-panel rounded-2xl flex flex-col transition-all duration-500 ease-out overflow-hidden ${
-        isRightPanelOpen ? 'translate-x-0 opacity-100' : 'translate-x-[410px] opacity-0 pointer-events-none'
-      }`}>
-        <div className="p-4 border-b border-border/80 flex items-center justify-between bg-[#040505]/40 select-none">
-          <div className="flex items-center gap-2">
-            <Code className="w-4 h-4 text-primary" />
-            <h2 className="text-xs font-bold tracking-wide text-foreground">Live Drizzle Schema Preview</h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
-              Syncing
-            </span>
-            <button
-              onClick={() => setIsRightPanelOpen(false)}
-              className="p-1 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-              title="Collapse Sidebar"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        <div className="flex-1 p-4 font-mono text-[10px] leading-relaxed text-foreground overflow-y-auto bg-[#040505]/10 select-text custom-scrollbar">
-          {drizzleCode ? (
-            <pre className="whitespace-pre-wrap">{drizzleCode}</pre>
+      <div 
+        className={`fixed ${rightTopClass} right-6 z-20 glass-panel rounded-2xl flex flex-col transition-all duration-500 ease-out overflow-hidden ${
+          isRightPanelOpen ? 'w-[450px] h-fit max-h-[calc(100vh-140px)]' : 'w-[240px] h-[56px] cursor-pointer hover:bg-card/10'
+        }`}
+        onClick={!isRightPanelOpen ? () => setIsRightPanelOpen(true) : undefined}
+      >
+        {/* Header */}
+        <div className="p-4 border-b border-border/80 flex items-center justify-between select-none bg-card/10 hover:bg-card/20 transition-colors">
+          {isRightPanelOpen ? (
+            <>
+              <div className="flex items-center gap-2">
+                <Code className="w-4 h-4 text-primary" />
+                <h2 className="text-xs font-bold tracking-wide text-foreground">Live Drizzle Schema Preview</h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
+                  Syncing
+                </span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setIsRightPanelOpen(false); }}
+                  className="p-1.5 rounded-lg hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  title="Collapse Preview"
+                >
+                  <ChevronUp className="w-4 h-4" />
+                </button>
+              </div>
+            </>
           ) : (
-            <div className="text-muted-foreground/60 italic text-center mt-20 text-xs">
-              No tables in schema. Click 'Load Sample' or 'Add Table' to preview code.
-            </div>
+            <>
+              <div className="flex items-center gap-2">
+                <Code className="w-4 h-4 text-primary animate-pulse" />
+                <span className="text-xs font-bold tracking-wide text-foreground">Drizzle Schema</span>
+              </div>
+              <ChevronDown className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
+            </>
           )}
         </div>
+
+        {/* Content */}
+        {isRightPanelOpen && (
+          <div className="flex-1 p-4 font-mono text-[10px] leading-relaxed text-foreground overflow-y-auto bg-[#040505]/10 select-text custom-scrollbar max-h-[calc(100vh-200px)]">
+            {drizzleCode ? (
+              <pre className="whitespace-pre-wrap">{drizzleCode}</pre>
+            ) : (
+              <div className="text-muted-foreground/60 italic text-center mt-20 text-xs">
+                No tables in schema. Click 'Load Sample' or 'Add Table' to preview code.
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Futuristic Floating Stream Overlay */}
