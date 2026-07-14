@@ -643,16 +643,6 @@ export default function App() {
       <div className={`fixed ${leftTopClass} left-4 bottom-4 z-20 w-80 glass-panel rounded-2xl flex flex-col transition-all duration-500 ease-out ${
         isLeftPanelOpen ? 'translate-x-0 opacity-100' : 'translate-x-[-340px] opacity-0 pointer-events-none'
       }`}>
-        <div className="absolute top-4 right-4 flex items-center gap-1.5 z-30">
-          <button
-            onClick={() => setIsLeftPanelOpen(false)}
-            className="p-1.5 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            title="Collapse Sidebar"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-        </div>
-
         <div className="flex-1 min-h-0 overflow-y-auto">
           <SchemaGeneratorPanel 
             currentSchema={schema}
@@ -663,6 +653,7 @@ export default function App() {
             setIsStreaming={setIsStreaming}
             streamingText={streamingText}
             setStreamingText={setStreamingText}
+            onCollapse={() => setIsLeftPanelOpen(false)}
           />
         </div>
       </div>

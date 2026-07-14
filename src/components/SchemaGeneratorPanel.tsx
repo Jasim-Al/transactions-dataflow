@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Sparkles, AlertCircle, Key, Cpu, HelpCircle } from 'lucide-react';
+import { Settings, Sparkles, AlertCircle, Key, Cpu, HelpCircle, ChevronLeft } from 'lucide-react';
 import type { LLMConfig, DatabaseSchema } from '../types/schema';
 
 interface SchemaGeneratorPanelProps {
@@ -11,6 +11,7 @@ interface SchemaGeneratorPanelProps {
   setIsStreaming: (s: boolean) => void;
   streamingText: string;
   setStreamingText: (t: string) => void;
+  onCollapse?: () => void;
 }
 
 const repairJSON = (rawText: string): string => {
@@ -94,7 +95,8 @@ export const SchemaGeneratorPanel: React.FC<SchemaGeneratorPanelProps> = ({
   config, 
   setConfig,
   setIsStreaming,
-  setStreamingText
+  setStreamingText,
+  onCollapse
 }) => {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
@@ -237,15 +239,26 @@ export const SchemaGeneratorPanel: React.FC<SchemaGeneratorPanelProps> = ({
             <p className="text-[10px] text-muted-foreground">Describe your DB or paste any dialect</p>
           </div>
         </div>
-        <button
-          onClick={() => setShowSettings(!showSettings)}
-          className={`p-1.5 rounded-lg hover:bg-secondary/60 transition-colors ${
-            showSettings ? 'text-primary bg-primary/10' : 'text-muted-foreground'
-          }`}
-          title="LLM Settings"
-        >
-          <Settings className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className={`p-1.5 rounded-lg hover:bg-secondary/60 transition-colors cursor-pointer ${
+              showSettings ? 'text-primary bg-primary/10' : 'text-muted-foreground'
+            }`}
+            title="LLM Settings"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+          {onCollapse && (
+            <button
+              onClick={onCollapse}
+              className="p-1.5 rounded-lg hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              title="Collapse Sidebar"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Settings Panel */}
