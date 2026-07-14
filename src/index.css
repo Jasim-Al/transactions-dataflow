@@ -290,3 +290,8 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.5) !important;
 }
+
+/* Remove round edges for all elements globally */
+*, ::before, ::after {
+  border-radius: 0px !important;
+}
