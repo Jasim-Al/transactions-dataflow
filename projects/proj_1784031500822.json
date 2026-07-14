@@ -1,0 +1,608 @@
+{
+  "id": "proj_1784031500822",
+  "name": "next",
+  "createdAt": "2026-07-14T12:18:20.822Z",
+  "updatedAt": "2026-07-14T12:47:06.548Z",
+  "schema": {
+    "tables": [
+      {
+        "id": "users",
+        "name": "users",
+        "columns": [
+          {
+            "id": "id",
+            "name": "id",
+            "type": "serial",
+            "primaryKey": true,
+            "notNull": true,
+            "unique": false,
+            "isIndex": true
+          },
+          {
+            "id": "username",
+            "name": "username",
+            "type": "varchar",
+            "primaryKey": false,
+            "notNull": true,
+            "unique": true,
+            "isIndex": true
+          },
+          {
+            "id": "email",
+            "name": "email",
+            "type": "varchar",
+            "primaryKey": false,
+            "notNull": true,
+            "unique": true,
+            "isIndex": true
+          }
+        ]
+      },
+      {
+        "id": "spaces",
+        "name": "spaces",
+        "columns": [
+          {
+            "id": "id",
+            "name": "id",
+            "type": "serial",
+            "primaryKey": true,
+            "notNull": true,
+            "unique": false,
+            "isIndex": true
+          },
+          {
+            "id": "user_id",
+            "name": "user_id",
+            "type": "integer",
+            "primaryKey": false,
+            "notNull": true,
+            "unique": false,
+            "isIndex": true
+          },
+          {
+            "id": "name",
+            "name": "name",
+            "type": "varchar",
+            "primaryKey": false,
+            "notNull": true,
+            "unique": false,
+            "isIndex": false
+          }
+        ]
+      },
+      {
+        "id": "tasks",
+        "name": "tasks",
+        "columns": [
+          {
+            "id": "id",
+            "name": "id",
+            "type": "serial",
+            "primaryKey": true,
+            "notNull": true,
+            "unique": false,
+            "isIndex": true
+          },
+          {
+            "id": "space_id",
+            "name": "space_id",
+            "type": "integer",
+            "primaryKey": false,
+            "notNull": true,
+            "unique": false,
+            "isIndex": true
+          },
+          {
+            "id": "user_id",
+            "name": "user_id",
+            "type": "integer",
+            "primaryKey": false,
+            "notNull": true,
+            "unique": false,
+            "isIndex": true
+          },
+          {
+            "id": "title",
+            "name": "title",
+            "type": "varchar",
+            "primaryKey": false,
+            "notNull": true,
+            "unique": false,
+            "isIndex": false
+          },
+          {
+            "id": "description",
+            "name": "description",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": false,
+            "unique": false,
+            "isIndex": false
+          },
+          {
+            "id": "state",
+            "name": "state",
+            "type": "varchar",
+            "primaryKey": false,
+            "notNull": true,
+            "unique": false,
+            "isIndex": true
+          },
+          {
+            "id": "due_date",
+            "name": "due_date",
+            "type": "timestamp",
+            "primaryKey": false,
+            "notNull": false,
+            "unique": false,
+            "isIndex": true
+          }
+        ]
+      },
+      {
+        "id": "deleted_tasks",
+        "name": "deleted_tasks",
+        "columns": [
+          {
+            "id": "id",
+            "name": "id",
+            "type": "serial",
+            "primaryKey": true,
+            "notNull": true,
+            "unique": false,
+            "isIndex": true
+          },
+          {
+            "id": "task_id",
+            "name": "task_id",
+            "type": "integer",
+            "primaryKey": false,
+            "notNull": true,
+            "unique": false,
+            "isIndex": true
+          },
+          {
+            "id": "deleted_by_user_id",
+            "name": "deleted_by_user_id",
+            "type": "integer",
+            "primaryKey": false,
+            "notNull": true,
+            "unique": false,
+            "isIndex": true
+          },
+          {
+            "id": "deleted_at",
+            "name": "deleted_at",
+            "type": "timestamp",
+            "primaryKey": false,
+            "notNull": true,
+            "unique": false,
+            "isIndex": true
+          }
+        ]
+      }
+    ],
+    "relations": [
+      {
+        "id": "rel_spaces_user_id_users_id",
+        "fromTable": "spaces",
+        "fromColumn": "user_id",
+        "toTable": "users",
+        "toColumn": "id",
+        "type": "many-to-one"
+      },
+      {
+        "id": "rel_tasks_space_id_spaces_id",
+        "fromTable": "tasks",
+        "fromColumn": "space_id",
+        "toTable": "spaces",
+        "toColumn": "id",
+        "type": "many-to-one"
+      },
+      {
+        "id": "rel_tasks_user_id_users_id",
+        "fromTable": "tasks",
+        "fromColumn": "user_id",
+        "toTable": "users",
+        "toColumn": "id",
+        "type": "many-to-one"
+      },
+      {
+        "id": "rel_deleted_tasks_task_id_tasks_id",
+        "fromTable": "deleted_tasks",
+        "fromColumn": "task_id",
+        "toTable": "tasks",
+        "toColumn": "id",
+        "type": "many-to-one"
+      },
+      {
+        "id": "rel_deleted_tasks_deleted_by_user_id_users_id",
+        "fromTable": "deleted_tasks",
+        "fromColumn": "deleted_by_user_id",
+        "toTable": "users",
+        "toColumn": "id",
+        "type": "many-to-one"
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "id": "users",
+      "type": "table",
+      "position": {
+        "x": 80,
+        "y": 100
+      },
+      "data": {
+        "table": {
+          "id": "users",
+          "name": "users",
+          "columns": [
+            {
+              "id": "id",
+              "name": "id",
+              "type": "serial",
+              "primaryKey": true,
+              "notNull": true,
+              "unique": false,
+              "isIndex": true
+            },
+            {
+              "id": "username",
+              "name": "username",
+              "type": "varchar",
+              "primaryKey": false,
+              "notNull": true,
+              "unique": true,
+              "isIndex": true
+            },
+            {
+              "id": "email",
+              "name": "email",
+              "type": "varchar",
+              "primaryKey": false,
+              "notNull": true,
+              "unique": true,
+              "isIndex": true
+            }
+          ]
+        }
+      },
+      "measured": {
+        "width": 322,
+        "height": 251
+      }
+    },
+    {
+      "id": "spaces",
+      "type": "table",
+      "position": {
+        "x": 460,
+        "y": 83.1152295975518
+      },
+      "data": {
+        "table": {
+          "id": "spaces",
+          "name": "spaces",
+          "columns": [
+            {
+              "id": "id",
+              "name": "id",
+              "type": "serial",
+              "primaryKey": true,
+              "notNull": true,
+              "unique": false,
+              "isIndex": true
+            },
+            {
+              "id": "user_id",
+              "name": "user_id",
+              "type": "integer",
+              "primaryKey": false,
+              "notNull": true,
+              "unique": false,
+              "isIndex": true
+            },
+            {
+              "id": "name",
+              "name": "name",
+              "type": "varchar",
+              "primaryKey": false,
+              "notNull": true,
+              "unique": false,
+              "isIndex": false
+            }
+          ]
+        }
+      },
+      "measured": {
+        "width": 322,
+        "height": 251
+      },
+      "selected": false,
+      "dragging": false
+    },
+    {
+      "id": "tasks",
+      "type": "table",
+      "position": {
+        "x": 840,
+        "y": 100
+      },
+      "data": {
+        "table": {
+          "id": "tasks",
+          "name": "tasks",
+          "columns": [
+            {
+              "id": "id",
+              "name": "id",
+              "type": "serial",
+              "primaryKey": true,
+              "notNull": true,
+              "unique": false,
+              "isIndex": true
+            },
+            {
+              "id": "space_id",
+              "name": "space_id",
+              "type": "integer",
+              "primaryKey": false,
+              "notNull": true,
+              "unique": false,
+              "isIndex": true
+            },
+            {
+              "id": "user_id",
+              "name": "user_id",
+              "type": "integer",
+              "primaryKey": false,
+              "notNull": true,
+              "unique": false,
+              "isIndex": true
+            },
+            {
+              "id": "title",
+              "name": "title",
+              "type": "varchar",
+              "primaryKey": false,
+              "notNull": true,
+              "unique": false,
+              "isIndex": false
+            },
+            {
+              "id": "description",
+              "name": "description",
+              "type": "text",
+              "primaryKey": false,
+              "notNull": false,
+              "unique": false,
+              "isIndex": false
+            },
+            {
+              "id": "state",
+              "name": "state",
+              "type": "varchar",
+              "primaryKey": false,
+              "notNull": true,
+              "unique": false,
+              "isIndex": true
+            },
+            {
+              "id": "due_date",
+              "name": "due_date",
+              "type": "timestamp",
+              "primaryKey": false,
+              "notNull": false,
+              "unique": false,
+              "isIndex": true
+            }
+          ]
+        }
+      },
+      "measured": {
+        "width": 322,
+        "height": 431
+      }
+    },
+    {
+      "id": "deleted_tasks",
+      "type": "table",
+      "position": {
+        "x": 80,
+        "y": 420
+      },
+      "data": {
+        "table": {
+          "id": "deleted_tasks",
+          "name": "deleted_tasks",
+          "columns": [
+            {
+              "id": "id",
+              "name": "id",
+              "type": "serial",
+              "primaryKey": true,
+              "notNull": true,
+              "unique": false,
+              "isIndex": true
+            },
+            {
+              "id": "task_id",
+              "name": "task_id",
+              "type": "integer",
+              "primaryKey": false,
+              "notNull": true,
+              "unique": false,
+              "isIndex": true
+            },
+            {
+              "id": "deleted_by_user_id",
+              "name": "deleted_by_user_id",
+              "type": "integer",
+              "primaryKey": false,
+              "notNull": true,
+              "unique": false,
+              "isIndex": true
+            },
+            {
+              "id": "deleted_at",
+              "name": "deleted_at",
+              "type": "timestamp",
+              "primaryKey": false,
+              "notNull": true,
+              "unique": false,
+              "isIndex": true
+            }
+          ]
+        }
+      },
+      "measured": {
+        "width": 322,
+        "height": 296
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "rel_spaces_user_id_users_id",
+      "source": "spaces",
+      "target": "users",
+      "sourceHandle": "spaces-user_id-source",
+      "targetHandle": "users-id-target",
+      "type": "smoothstep",
+      "animated": true,
+      "label": "N:1",
+      "selected": false,
+      "labelStyle": {
+        "fill": "hsl(var(--foreground))",
+        "fontSize": 9,
+        "fontWeight": 700
+      },
+      "labelBgPadding": [
+        4,
+        2
+      ],
+      "labelBgBorderRadius": 4,
+      "labelBgStyle": {
+        "fill": "hsl(var(--muted))"
+      },
+      "style": {
+        "stroke": "hsl(var(--muted-foreground))",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "rel_tasks_space_id_spaces_id",
+      "source": "tasks",
+      "target": "spaces",
+      "sourceHandle": "tasks-space_id-source",
+      "targetHandle": "spaces-id-target",
+      "type": "smoothstep",
+      "animated": true,
+      "label": "N:1",
+      "selected": false,
+      "labelStyle": {
+        "fill": "hsl(var(--foreground))",
+        "fontSize": 9,
+        "fontWeight": 700
+      },
+      "labelBgPadding": [
+        4,
+        2
+      ],
+      "labelBgBorderRadius": 4,
+      "labelBgStyle": {
+        "fill": "hsl(var(--muted))"
+      },
+      "style": {
+        "stroke": "hsl(var(--muted-foreground))",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "rel_tasks_user_id_users_id",
+      "source": "tasks",
+      "target": "users",
+      "sourceHandle": "tasks-user_id-source",
+      "targetHandle": "users-id-target",
+      "type": "smoothstep",
+      "animated": true,
+      "label": "N:1",
+      "selected": false,
+      "labelStyle": {
+        "fill": "hsl(var(--foreground))",
+        "fontSize": 9,
+        "fontWeight": 700
+      },
+      "labelBgPadding": [
+        4,
+        2
+      ],
+      "labelBgBorderRadius": 4,
+      "labelBgStyle": {
+        "fill": "hsl(var(--muted))"
+      },
+      "style": {
+        "stroke": "hsl(var(--muted-foreground))",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "rel_deleted_tasks_task_id_tasks_id",
+      "source": "deleted_tasks",
+      "target": "tasks",
+      "sourceHandle": "deleted_tasks-task_id-source",
+      "targetHandle": "tasks-id-target",
+      "type": "smoothstep",
+      "animated": true,
+      "label": "N:1",
+      "selected": false,
+      "labelStyle": {
+        "fill": "hsl(var(--foreground))",
+        "fontSize": 9,
+        "fontWeight": 700
+      },
+      "labelBgPadding": [
+        4,
+        2
+      ],
+      "labelBgBorderRadius": 4,
+      "labelBgStyle": {
+        "fill": "hsl(var(--muted))"
+      },
+      "style": {
+        "stroke": "hsl(var(--muted-foreground))",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "rel_deleted_tasks_deleted_by_user_id_users_id",
+      "source": "deleted_tasks",
+      "target": "users",
+      "sourceHandle": "deleted_tasks-deleted_by_user_id-source",
+      "targetHandle": "users-id-target",
+      "type": "smoothstep",
+      "animated": true,
+      "label": "N:1",
+      "selected": false,
+      "labelStyle": {
+        "fill": "hsl(var(--foreground))",
+        "fontSize": 9,
+        "fontWeight": 700
+      },
+      "labelBgPadding": [
+        4,
+        2
+      ],
+      "labelBgBorderRadius": 4,
+      "labelBgStyle": {
+        "fill": "hsl(var(--muted))"
+      },
+      "style": {
+        "stroke": "hsl(var(--muted-foreground))",
+        "strokeWidth": 2
+      }
+    }
+  ]
+}

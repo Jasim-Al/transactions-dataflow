@@ -15,12 +15,15 @@ import type {
   Node
 } from '@xyflow/react';
 
-import { Code, Trash2, ChevronUp, ChevronDown, Workflow, Eraser, Compass, FileCode2, PlusCircle, Sun, Moon } from 'lucide-react';
+import { Code, Trash2, ChevronUp, ChevronDown, Workflow, Eraser, Compass, FileCode2, PlusCircle, Sun, Moon, Save, FolderOpen, FileUp } from 'lucide-react';
 import type { DatabaseSchema, Table, Column, Relation, LLMConfig } from './types/schema';
 import { TableNode } from './components/TableNode';
 import { SchemaGeneratorPanel } from './components/SchemaGeneratorPanel';
 import { ExportModal } from './components/ExportModal';
 import { generateDrizzleSchema } from './utils/drizzleGenerator';
+import { ProjectModal } from './components/ProjectModal';
+import { ImportModal } from './components/ImportModal';
+import { Toaster, toast } from 'sonner';
 
 const initialSampleSchema: DatabaseSchema = {
   tables: [
@@ -96,11 +99,29 @@ const nodeTypes = {
 export default function App() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
-  const [llmConfig, setLlmConfig] = useState<LLMConfig>({
-    provider: 'ollama',
-    apiKey: '',
-    model: 'gemma4:e4b',
+  
+  // Persist LLM Config in localStorage
+  const [llmConfig, setLlmConfig] = useState<LLMConfig>(() => {
+    try {
+      const saved = localStorage.getItem('llm_config');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return {
+      provider: 'ollama',
+      apiKey: '',
+      model: 'gemma4:e4b',
+    };
   });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('llm_config', JSON.stringify(llmConfig));
+    } catch (e) {}
+  }, [llmConfig]);
+
+  const [currentProject, setCurrentProject] = useState<{ id: string, name: string } | null>(null);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -109,16 +130,44 @@ export default function App() {
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
   const [isHeaderOpen, setIsHeaderOpen] = useState(true);
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    try {
+      const saved = localStorage.getItem('selected_theme');
+      if (saved === 'dark' || saved === 'light') return saved;
+    } catch (e) {}
+    return 'dark';
+  });
 
   useEffect(() => {
     const root = window.document.documentElement;
-    if (theme === 'light') {
-      root.classList.add('light');
+    if (theme === 'dark') {
+      root.classList.add('dark');
     } else {
-      root.classList.remove('light');
+      root.classList.remove('dark');
     }
+    try {
+      localStorage.setItem('selected_theme', theme);
+    } catch (e) {}
   }, [theme]);
+
+
+  useEffect(() => {
+    if (isStreaming) {
+      setIsRightPanelOpen(true);
+    }
+  }, [isStreaming]);
+
+  useEffect(() => {
+    try {
+      if (currentProject) {
+        localStorage.setItem('active_project_id', currentProject.id);
+      } else {
+        localStorage.removeItem('active_project_id');
+      }
+    } catch (e) {}
+  }, [currentProject]);
+
+
 
   // Reconstruct schema object live from current nodes and edges
   const schema = useMemo<DatabaseSchema>(() => {
@@ -420,10 +469,14 @@ export default function App() {
         animated: true,
         label,
         selected: isSelected,
-        labelStyle: { fill: '#ffffff', fontSize: 9, fontWeight: 700 },
+        labelStyle: { 
+          fill: isSelected ? 'hsl(var(--primary-foreground))' : 'hsl(var(--foreground))', 
+          fontSize: 9, 
+          fontWeight: 700 
+        },
         labelBgPadding: [4, 2] as [number, number],
         labelBgBorderRadius: 4,
-        labelBgStyle: { fill: isSelected ? 'hsl(var(--primary))' : 'hsl(var(--muted))', color: '#fff' },
+        labelBgStyle: { fill: isSelected ? 'hsl(var(--primary))' : 'hsl(var(--muted))' },
         style: {
           stroke: isSelected ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
           strokeWidth: isSelected ? 3 : 2,
@@ -435,10 +488,7 @@ export default function App() {
     setEdges(flowEdges);
   }, [handleRenameTable, handleDeleteTable, handleAddColumn, handleUpdateColumn, handleDeleteColumn, selectedEdgeId]);
 
-  // Load sample schema initially
-  useEffect(() => {
-    onSchemaGenerated(initialSampleSchema);
-  }, []);
+
 
   const onConnect = useCallback((connection: Connection) => {
     setEdges((eds) => addEdge({
@@ -446,10 +496,10 @@ export default function App() {
       type: 'smoothstep',
       animated: true,
       label: 'N:1',
-      labelStyle: { fill: '#ffffff', fontSize: 9, fontWeight: 700 },
+      labelStyle: { fill: 'hsl(var(--foreground))', fontSize: 9, fontWeight: 700 },
       labelBgPadding: [4, 2] as [number, number],
       labelBgBorderRadius: 4,
-      labelBgStyle: { fill: 'hsl(var(--muted))', color: '#fff' },
+      labelBgStyle: { fill: 'hsl(var(--muted))' },
       style: {
         stroke: 'hsl(var(--muted-foreground))',
         strokeWidth: 2,
@@ -468,7 +518,11 @@ export default function App() {
       return {
         ...e,
         selected: isSelected,
-        labelBgStyle: { fill: isSelected ? 'hsl(var(--primary))' : 'hsl(var(--muted))', color: '#fff' },
+        labelStyle: {
+          ...e.labelStyle,
+          fill: isSelected ? 'hsl(var(--primary-foreground))' : 'hsl(var(--foreground))',
+        },
+        labelBgStyle: { fill: isSelected ? 'hsl(var(--primary))' : 'hsl(var(--muted))' },
         style: {
           stroke: isSelected ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
           strokeWidth: isSelected ? 3 : 2,
@@ -497,15 +551,134 @@ export default function App() {
     setNodes([]);
     setEdges([]);
     setSelectedEdgeId(null);
+    setCurrentProject(null);
   };
 
   const handleLoadSample = () => {
     onSchemaGenerated(initialSampleSchema);
     setSelectedEdgeId(null);
+    setCurrentProject(null);
   };
 
-  const leftTopClass = isHeaderOpen ? 'top-[96px]' : 'top-6';
-  const rightTopClass = isHeaderOpen ? 'top-[96px]' : 'top-6';
+  const handleLoadProject = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/projects/${id}`);
+      if (!res.ok) throw new Error('Failed to fetch project');
+      const project = await res.json();
+      
+      const loadedNodes = project.nodes.map((node: any) => ({
+        ...node,
+        data: {
+          ...node.data,
+          onRenameTable: handleRenameTable,
+          onDeleteTable: handleDeleteTable,
+          onAddColumn: handleAddColumn,
+          onUpdateColumn: handleUpdateColumn,
+          onDeleteColumn: handleDeleteColumn,
+        }
+      }));
+
+      setNodes(loadedNodes);
+      setEdges(project.edges || []);
+      setCurrentProject({ id: project.id, name: project.name });
+      toast.success(`Project "${project.name}" loaded successfully!`);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Failed to load project');
+    }
+  }, [handleRenameTable, handleDeleteTable, handleAddColumn, handleUpdateColumn, handleDeleteColumn, setNodes, setEdges]);
+
+  const handleCreateProject = useCallback(async (name: string) => {
+    try {
+      const res = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          schema,
+          nodes,
+          edges,
+        })
+      });
+      if (!res.ok) throw new Error('Failed to create project');
+      const project = await res.json();
+      setCurrentProject({ id: project.id, name: project.name });
+      
+      const loadedNodes = project.nodes.map((node: any) => ({
+        ...node,
+        data: {
+          ...node.data,
+          onRenameTable: handleRenameTable,
+          onDeleteTable: handleDeleteTable,
+          onAddColumn: handleAddColumn,
+          onUpdateColumn: handleUpdateColumn,
+          onDeleteColumn: handleDeleteColumn,
+        }
+      }));
+      setNodes(loadedNodes);
+      setEdges(project.edges || []);
+      toast.success(`Project "${name}" created successfully!`);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Failed to create project');
+    }
+  }, [schema, nodes, edges, handleRenameTable, handleDeleteTable, handleAddColumn, handleUpdateColumn, handleDeleteColumn, setNodes, setEdges]);
+
+  const handleSaveProject = useCallback(async () => {
+    if (!currentProject) {
+      setIsProjectModalOpen(true);
+      return;
+    }
+    try {
+      const res = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: currentProject.id,
+          name: currentProject.name,
+          schema,
+          nodes,
+          edges,
+        })
+      });
+      if (!res.ok) throw new Error('Failed to save project');
+      toast.success(`Project "${currentProject.name}" saved successfully!`);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Failed to save project');
+    }
+  }, [currentProject, schema, nodes, edges]);
+
+  // Load active project or sample schema initially
+  useEffect(() => {
+    const loadInitial = async () => {
+      try {
+        const savedProjectId = localStorage.getItem('active_project_id');
+        if (savedProjectId) {
+          await handleLoadProject(savedProjectId);
+          return;
+        }
+
+        // Fallback: load the most recently updated project from the backend
+        const res = await fetch('/api/projects');
+        if (res.ok) {
+          const projects = await res.json();
+          if (projects && projects.length > 0) {
+            await handleLoadProject(projects[0].id);
+            return;
+          }
+        }
+      } catch (e) {
+        console.error('Error restoring active project:', e);
+      }
+      onSchemaGenerated(initialSampleSchema);
+    };
+    loadInitial();
+  }, [handleLoadProject]);
+
+
+  const leftTopClass = isHeaderOpen ? 'top-[116px]' : 'top-6';
+  const rightTopClass = isHeaderOpen ? 'top-[116px]' : 'top-6';
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-background text-foreground select-none">
@@ -564,8 +737,12 @@ export default function App() {
             <Workflow className="w-5 h-5 drop-shadow-[0_0_8px_rgba(243,148,68,0.5)]" />
           </div>
           <div>
-            <h1 className="text-sm font-black tracking-wider uppercase text-foreground leading-tight">Relational Dataflow</h1>
-            <p className="text-[10px] text-muted-foreground leading-none mt-0.5">Interactive Database Schema Modeler</p>
+            <h1 className="text-sm font-black tracking-wider uppercase text-foreground leading-tight">
+              {currentProject ? `Proj: ${currentProject.name}` : 'Relational Dataflow'}
+            </h1>
+            <p className="text-[10px] text-muted-foreground leading-none mt-0.5">
+              {currentProject ? 'Persisted Relational Schema Modeler' : 'Interactive Database Schema Modeler'}
+            </p>
           </div>
         </div>
 
@@ -592,22 +769,55 @@ export default function App() {
           )}
 
           <button
+            onClick={() => setIsImportModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-transparent hover:bg-secondary/30 text-foreground text-xs font-semibold rounded-xl border border-border transition-all cursor-pointer"
+            title="Import Drizzle ORM Schema"
+          >
+            <FileUp className="w-4 h-4 text-amber-500" />
+            Import Drizzle
+          </button>
+
+          <button
+            onClick={() => setIsProjectModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-transparent hover:bg-secondary/30 text-foreground text-xs font-semibold rounded-xl border border-border transition-all cursor-pointer"
+            title="Manage Saved Projects"
+          >
+            <FolderOpen className="w-4 h-4 text-indigo-400" />
+            {currentProject ? currentProject.name : 'Projects'}
+          </button>
+
+          <button
+            onClick={handleSaveProject}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border transition-all cursor-pointer ${
+              currentProject 
+                ? 'bg-emerald-500/20 border-emerald-500/35 hover:bg-emerald-500/30 text-emerald-400' 
+                : 'bg-transparent border-border hover:bg-secondary/30 text-foreground'
+            }`}
+            title="Save Project"
+          >
+            <Save className="w-4 h-4" />
+            Save
+          </button>
+
+          <div className="w-px h-6 bg-border mx-1" />
+
+          <button
             onClick={handleAddTable}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground text-xs font-semibold rounded-xl border border-border transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-transparent hover:bg-secondary/30 text-foreground text-xs font-semibold rounded-xl border border-border transition-all cursor-pointer"
           >
             <PlusCircle className="w-4 h-4 text-primary" />
             Add Table
           </button>
           <button
             onClick={handleClearAll}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground text-xs font-semibold rounded-xl border border-border transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-transparent hover:bg-secondary/30 text-foreground text-xs font-semibold rounded-xl border border-border transition-all cursor-pointer"
           >
             <Eraser className="w-4 h-4 text-destructive" />
             Clear Canvas
           </button>
           <button
             onClick={handleLoadSample}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground text-xs font-semibold rounded-xl border border-border transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-transparent hover:bg-secondary/30 text-foreground text-xs font-semibold rounded-xl border border-border transition-all cursor-pointer"
           >
             <Compass className="w-4 h-4 text-sky-400" />
             Load Sample
@@ -625,7 +835,7 @@ export default function App() {
 
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="flex items-center justify-center p-1.5 bg-secondary hover:bg-secondary/80 text-foreground rounded-xl border border-border transition-all cursor-pointer"
+            className="flex items-center justify-center p-1.5 bg-transparent hover:bg-secondary/30 text-foreground rounded-xl border border-border transition-all cursor-pointer"
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
             {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-sky-400" />}
@@ -705,7 +915,17 @@ export default function App() {
         {/* Content */}
         {isRightPanelOpen && (
           <div className="flex-1 p-4 font-mono text-[10px] leading-relaxed text-foreground overflow-y-auto bg-secondary/20 select-text custom-scrollbar max-h-[calc(100vh-200px)]">
-            {drizzleCode ? (
+            {isStreaming ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-primary font-bold text-[10px] uppercase animate-pulse">
+                  <div className="w-2 h-2 rounded-full bg-primary animate-ping" />
+                  Streaming AI Response...
+                </div>
+                <pre className="whitespace-pre-wrap text-orange-200 bg-black/40 p-3 rounded-lg border border-primary/20 overflow-x-auto select-text font-mono text-[10px] leading-normal">
+                  {streamingText || 'Connecting to model...'}
+                </pre>
+              </div>
+            ) : drizzleCode ? (
               <pre className="whitespace-pre-wrap">{drizzleCode}</pre>
             ) : (
               <div className="text-muted-foreground/60 italic text-center mt-20 text-xs">
@@ -714,36 +934,9 @@ export default function App() {
             )}
           </div>
         )}
+
       </div>
 
-      {/* Futuristic Floating Stream Overlay */}
-      {isStreaming && (
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 select-none animate-in fade-in duration-300">
-          <div className="bg-card/80 border border-primary/20 rounded-2xl p-6 w-full max-w-2xl shadow-[0_0_50px_rgba(243,148,68,0.1)] flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200 backdrop-blur-md">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-5 h-5 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
-                <div>
-                  <h3 className="text-sm font-semibold text-foreground">AI Schema Generation in Progress</h3>
-                  <p className="text-[10px] text-muted-foreground">Streaming real-time structured JSON schema from model</p>
-                </div>
-              </div>
-              <div className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-primary animate-pulse">
-                Live Stream
-              </div>
-            </div>
-            
-            <div className="relative">
-              <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 rounded bg-black/40 border border-border text-[9px] font-mono text-muted-foreground">
-                <span>{streamingText.length} bytes</span>
-              </div>
-              <pre className="font-mono text-xs text-orange-200 bg-black/90 p-4 rounded-xl border border-border/80 overflow-y-auto max-h-[300px] text-left leading-relaxed select-text shadow-inner scrollbar-thin">
-                <code>{streamingText || 'Connecting to model...'}</code>
-              </pre>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Export Schema Dialog */}
       <ExportModal 
@@ -752,6 +945,25 @@ export default function App() {
         drizzleCode={drizzleCode}
         config={llmConfig}
       />
+
+      {/* Project Manager Dialog */}
+      <ProjectModal
+        isOpen={isProjectModalOpen}
+        onClose={() => setIsProjectModalOpen(false)}
+        onLoadProject={handleLoadProject}
+        onCreateProject={handleCreateProject}
+      />
+
+      {/* Import Drizzle Schema Dialog */}
+      <ImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onSchemaImported={onSchemaGenerated}
+        config={llmConfig}
+        setConfig={setLlmConfig}
+      />
+
+      <Toaster theme={theme} position="top-right" closeButton richColors />
     </div>
   );
 }

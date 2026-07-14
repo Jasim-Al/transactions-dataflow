@@ -34,6 +34,38 @@
 }
 
 :root {
+  --background: 210 20% 98%;
+  --foreground: 210 10% 8%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 210 10% 8%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 210 10% 8%;
+
+  --primary: 27 88% 54%;
+  --primary-foreground: 0 0% 98%;
+
+  --secondary: 210 15% 91%;
+  --secondary-foreground: 210 10% 8%;
+
+  --muted: 210 10% 94%;
+  --muted-foreground: 210 5% 42%;
+
+  --accent: 27 88% 54%;
+  --accent-foreground: 0 0% 98%;
+
+  --destructive: 0 100% 50%;
+  --destructive-foreground: 0 0% 98%;
+
+  --border: 210 10% 0% / 0.08;
+  --input: 210 10% 0% / 0.08;
+  --ring: 27 88% 54%;
+
+  --radius: 1rem;
+}
+
+.dark {
   --background: 0 0% 1.6%;
   --foreground: 0 0% 97.3%;
 
@@ -61,32 +93,6 @@
   --border: 0 0% 100% / 0.08;
   --input: 0 0% 100% / 0.08;
   --ring: 27 88% 61%;
-
-  --radius: 1rem;
-}
-
-.light {
-  --background: 210 20% 98%;
-  --foreground: 210 10% 8%;
-
-  --card: 0 0% 100%;
-  --card-foreground: 210 10% 8%;
-
-  --popover: 0 0% 100%;
-  --popover-foreground: 210 10% 8%;
-
-  --primary: 27 88% 54%;
-  --primary-foreground: 0 0% 98%;
-
-  --secondary: 210 15% 91%;
-  --secondary-foreground: 210 10% 8%;
-
-  --muted: 210 10% 94%;
-  --muted-foreground: 210 5% 42%;
-
-  --border: 210 10% 0% / 0.08;
-  --input: 210 10% 0% / 0.08;
-  --ring: 27 88% 54%;
 }
 
 body {
@@ -114,17 +120,17 @@ body {
 /* Custom styles for ReactFlow grid and handle nodes */
 .react-flow__node-table {
   border-radius: var(--radius);
-  background-color: rgba(4, 5, 5, 0.45) !important;
-  backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background-color: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(25px) saturate(180%);
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
   color: hsl(var(--foreground));
-  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.08);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .react-flow__node-table:hover {
-  border-color: rgba(243, 148, 68, 0.4) !important;
-  box-shadow: 0 0 30px rgba(243, 148, 68, 0.15);
+  border-color: rgba(243, 148, 68, 0.45) !important;
+  box-shadow: 0 0 25px rgba(243, 148, 68, 0.12);
 }
 
 .react-flow__handle {
@@ -163,12 +169,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.1);
   border-radius: 99px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(243, 148, 68, 0.35);
+  background: rgba(243, 148, 68, 0.45);
 }
 
 /* Custom Scrollbar Utility */
@@ -187,14 +193,14 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(243, 148, 68, 0.2) !important;
+  background: rgba(243, 148, 68, 0.25) !important;
   border-radius: 99px;
   border: 1px solid rgba(255, 255, 255, 0.02);
   transition: background-color 0.2s ease;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(243, 148, 68, 0.45) !important;
+  background: rgba(243, 148, 68, 0.5) !important;
 }
 
 /* Custom styles for ReactFlow Controls panel to match dark mode */
@@ -245,7 +251,7 @@ body {
 .gradient-bg {
   position: absolute;
   inset: 0;
-  background-color: #040505;
+  background-color: #f8f9fa;
   overflow: hidden;
   z-index: 0;
   pointer-events: none;
@@ -257,27 +263,27 @@ body {
   height: 900px;
   border-radius: 50%;
   filter: blur(140px);
-  opacity: 0.16;
-  mix-blend-mode: screen;
+  opacity: 0.85;
+  mix-blend-mode: multiply;
   pointer-events: none;
 }
 
 .gradient-blob-1 {
-  background: radial-gradient(circle, rgba(45, 130, 245, 0.95) 0%, rgba(0, 0, 0, 0) 70%);
+  background: radial-gradient(circle, rgba(45, 130, 245, 0.38) 0%, rgba(255, 255, 255, 0) 70%);
   top: -20%;
   left: -10%;
   animation: drift 25s infinite alternate ease-in-out;
 }
 
 .gradient-blob-2 {
-  background: radial-gradient(circle, rgba(243, 148, 68, 0.9) 0%, rgba(0, 0, 0, 0) 70%);
+  background: radial-gradient(circle, rgba(243, 148, 68, 0.35) 0%, rgba(255, 255, 255, 0) 70%);
   bottom: -25%;
   right: -10%;
   animation: drift 30s infinite alternate-reverse ease-in-out;
 }
 
 .gradient-blob-3 {
-  background: radial-gradient(circle, rgba(255, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0) 70%);
+  background: radial-gradient(circle, rgba(255, 60, 60, 0.28) 0%, rgba(255, 255, 255, 0) 70%);
   top: 30%;
   left: 45%;
   width: 700px;
@@ -301,95 +307,124 @@ body {
   position: absolute;
   inset: 0;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  opacity: 0.055;
-  mix-blend-mode: overlay;
+  opacity: 0.035;
+  mix-blend-mode: multiply;
   pointer-events: none;
   z-index: 1;
 }
 
 /* Glassmorphism panel helper */
 .glass-panel {
-  background-color: rgba(4, 5, 5, 0.45) !important;
-  backdrop-filter: blur(20px) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.5) !important;
-}
-
-/* Remove round edges for all elements globally */
-*, ::before, ::after {
-  border-radius: 0px !important;
-}
-
-/* Light Mode Overrides for Panels and Nodes */
-.light .glass-panel {
   background-color: rgba(255, 255, 255, 0.65) !important;
   backdrop-filter: blur(25px) saturate(180%) !important;
   border: 1px solid rgba(0, 0, 0, 0.08) !important;
   box-shadow: 0 15px 40px -10px rgba(0, 0, 0, 0.08) !important;
 }
 
-.light .react-flow__node-table {
-  background-color: rgba(255, 255, 255, 0.75) !important;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-  box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.08) !important;
+/* Add subtle, negligible roundness globally */
+*, ::before, ::after {
+  border-radius: 4px !important;
 }
 
-.light .react-flow__node-table:hover {
-  border-color: rgba(243, 148, 68, 0.45) !important;
-  box-shadow: 0 0 25px rgba(243, 148, 68, 0.12) !important;
+/* Dark Mode Overrides for Panels and Nodes */
+.dark .glass-panel {
+  background-color: rgba(4, 5, 5, 0.45) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.5) !important;
 }
 
-.light .react-flow__handle {
+.dark .react-flow__node-table {
+  background-color: rgba(4, 5, 5, 0.45) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6) !important;
+}
+
+.dark .react-flow__node-table:hover {
+  border-color: rgba(243, 148, 68, 0.4) !important;
+  box-shadow: 0 0 30px rgba(243, 148, 68, 0.15) !important;
+}
+
+.dark .react-flow__handle {
   border: 2px solid hsl(var(--background)) !important;
 }
 
-.light .react-flow__edge-path {
+.dark .react-flow__edge-path {
   stroke: hsl(var(--muted-foreground)) !important;
 }
 
-.light .react-flow__edge.selected .react-flow__edge-path {
+.dark .react-flow__edge.selected .react-flow__edge-path {
   stroke: hsl(var(--accent)) !important;
 }
 
-/* Light Mode Background Overrides */
-.light .gradient-bg {
-  background-color: #f8f9fa !important;
+/* Dark Mode Background Overrides */
+.dark .gradient-bg {
+  background-color: #040505 !important;
 }
 
-.light .gradient-blob {
-  mix-blend-mode: multiply !important;
-  opacity: 0.85 !important;
+.dark .gradient-blob {
+  mix-blend-mode: screen !important;
+  opacity: 0.16 !important;
 }
 
-.light .gradient-blob-1 {
-  background: radial-gradient(circle, rgba(45, 130, 245, 0.38) 0%, rgba(255, 255, 255, 0) 70%) !important;
+.dark .gradient-blob-1 {
+  background: radial-gradient(circle, rgba(45, 130, 245, 0.95) 0%, rgba(0, 0, 0, 0) 70%) !important;
 }
 
-.light .gradient-blob-2 {
-  background: radial-gradient(circle, rgba(243, 148, 68, 0.35) 0%, rgba(255, 255, 255, 0) 70%) !important;
+.dark .gradient-blob-2 {
+  background: radial-gradient(circle, rgba(243, 148, 68, 0.9) 0%, rgba(0, 0, 0, 0) 70%) !important;
 }
 
-.light .gradient-blob-3 {
-  background: radial-gradient(circle, rgba(255, 60, 60, 0.28) 0%, rgba(255, 255, 255, 0) 70%) !important;
+.dark .gradient-blob-3 {
+  background: radial-gradient(circle, rgba(255, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0) 70%) !important;
 }
 
-.light .bg-grain {
-  opacity: 0.035 !important;
-  mix-blend-mode: multiply !important;
+.dark .bg-grain {
+  opacity: 0.055 !important;
+  mix-blend-mode: overlay !important;
 }
 
-.light ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.1);
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
 }
 
-.light ::-webkit-scrollbar-thumb:hover {
-  background: rgba(243, 148, 68, 0.45);
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(243, 148, 68, 0.35);
 }
 
-.light .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(243, 148, 68, 0.25);
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(243, 148, 68, 0.2) !important;
 }
 
-.light .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(243, 148, 68, 0.5);
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(243, 148, 68, 0.45) !important;
 }
+
+/* Custom React Flow Handles / Anchor Points */
+.react-flow__handle.custom-handle {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+  background-color: hsl(var(--card)) !important;
+  border: 2px solid hsl(var(--primary)) !important;
+  box-shadow: 0 0 6px rgba(243, 148, 68, 0.4) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  z-index: 10 !important;
+}
+
+.react-flow__handle.custom-handle:hover,
+.react-flow__handle.custom-handle.connecting {
+  transform: scale(1.35) !important;
+  background-color: hsl(var(--primary)) !important;
+  border-color: hsl(var(--primary-foreground)) !important;
+  box-shadow: 0 0 10px hsl(var(--primary)) !important;
+}
+
+.react-flow__handle-left.custom-handle {
+  left: -5px !important;
+}
+
+.react-flow__handle-right.custom-handle {
+  right: -5px !important;
+}
+

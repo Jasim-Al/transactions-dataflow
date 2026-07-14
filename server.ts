@@ -4,6 +4,8 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { error } from "console";
+import { mkdir, readdir, unlink, readFile, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 
 const PORT = 3001;
 
@@ -315,6 +317,219 @@ ${drizzleSchema}
   }
 }
 
+const PROJECTS_DIR = "./projects";
+async function ensureProjectsDir() {
+  if (!existsSync(PROJECTS_DIR)) {
+    await mkdir(PROJECTS_DIR, { recursive: true });
+  }
+}
+
+async function handleGetProjects(): Promise<Response> {
+  try {
+    await ensureProjectsDir();
+    const files = await readdir(PROJECTS_DIR);
+    const projectsList = [];
+    for (const file of files) {
+      if (file.endsWith(".json")) {
+        const filePath = `${PROJECTS_DIR}/${file}`;
+        try {
+          const content = await readFile(filePath, "utf-8");
+          const parsed = JSON.parse(content);
+          projectsList.push({
+            id: parsed.id,
+            name: parsed.name,
+            createdAt: parsed.createdAt,
+            updatedAt: parsed.updatedAt,
+            tablesCount: parsed.schema?.tables?.length || 0,
+            relationsCount: parsed.schema?.relations?.length || 0,
+          });
+        } catch (e) {
+          console.error(`Error reading project file ${file}:`, e);
+        }
+      }
+    }
+    projectsList.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    return Response.json(projectsList);
+  } catch (err: any) {
+    return Response.json({ error: err.message || "Failed to list projects" }, { status: 500 });
+  }
+}
+
+async function handleGetProject(id: string): Promise<Response> {
+  try {
+    await ensureProjectsDir();
+    const filePath = `${PROJECTS_DIR}/${id}.json`;
+    if (!existsSync(filePath)) {
+      return Response.json({ error: "Project not found" }, { status: 404 });
+    }
+    const content = await readFile(filePath, "utf-8");
+    return new Response(content, { headers: { "Content-Type": "application/json" } });
+  } catch (err: any) {
+    return Response.json({ error: err.message || "Failed to get project" }, { status: 500 });
+  }
+}
+
+async function handleSaveProject(req: Request): Promise<Response> {
+  try {
+    await ensureProjectsDir();
+    const body = await req.json();
+    const { name, schema, nodes, edges } = body;
+    let id = body.id;
+
+    if (!name) {
+      return Response.json({ error: "Project name is required" }, { status: 400 });
+    }
+
+    if (!id) {
+      id = `proj_${Date.now()}`;
+    }
+
+    const filePath = `${PROJECTS_DIR}/${id}.json`;
+    let createdAt = new Date().toISOString();
+    
+    if (existsSync(filePath)) {
+      try {
+        const existing = JSON.parse(await readFile(filePath, "utf-8"));
+        createdAt = existing.createdAt || createdAt;
+      } catch (e) {}
+    }
+
+    const projectData = {
+      id,
+      name,
+      createdAt,
+      updatedAt: new Date().toISOString(),
+      schema,
+      nodes,
+      edges
+    };
+
+    await writeFile(filePath, JSON.stringify(projectData, null, 2), "utf-8");
+    return Response.json(projectData);
+  } catch (err: any) {
+    return Response.json({ error: err.message || "Failed to save project" }, { status: 500 });
+  }
+}
+
+async function handleDeleteProject(id: string): Promise<Response> {
+  try {
+    await ensureProjectsDir();
+    const filePath = `${PROJECTS_DIR}/${id}.json`;
+    if (!existsSync(filePath)) {
+      return Response.json({ error: "Project not found" }, { status: 404 });
+    }
+    await unlink(filePath);
+    return Response.json({ success: true, message: "Project deleted successfully" });
+  } catch (err: any) {
+    return Response.json({ error: err.message || "Failed to delete project" }, { status: 500 });
+  }
+}
+
+async function handleImportDrizzle(req: Request): Promise<Response> {
+  try {
+    const body = await req.json();
+    const { drizzleSchema, provider = "ollama", apiKey = "", model = "" } = body;
+
+    if (!drizzleSchema) {
+      return Response.json({ error: "Drizzle schema is required" }, { status: 400 });
+    }
+
+    const IMPORT_SYSTEM_PROMPT = `You are an expert database architect. Your task is to analyze a Drizzle ORM schema definition and convert it into a structured database schema definition JSON object matching the schema below.
+
+You must respond ONLY with a JSON object matching the following structure. Do not include any explanation, markdown formatting (do not wrap in \`\`\`json or \`\`\`), or extra characters outside the JSON object.
+
+Schema Structure:
+{
+  "tables": [
+    {
+      "name": "table_name",
+      "columns": [
+        {
+          "name": "column_name",
+          "type": "serial" | "integer" | "varchar" | "text" | "boolean" | "timestamp" | "uuid" | "jsonb",
+          "primaryKey": boolean,
+          "notNull": boolean,
+          "unique": boolean,
+          "isIndex": boolean
+        }
+      ]
+    }
+  ],
+  "relations": [
+    {
+      "fromTable": "source_table_name",
+      "fromColumn": "source_column_name",
+      "toTable": "target_table_name",
+      "toColumn": "target_column_name",
+      "type": "one-to-one" | "one-to-many" | "many-to-one" | "many-to-many"
+    }
+  ]
+}
+
+Important Instructions:
+- Parse all pgTable definitions and extract table names, column names, column types, primary keys, notNull, unique, and index constraints.
+- Parse defineRelations definitions to populate the "relations" array with correct fromTable, fromColumn, toTable, toColumn, and type mappings.
+- If a relation does not specify field/reference columns directly in the defineRelations, search for the corresponding foreign key definition or infer them from the table names and fields (e.g. if post has authorId, and relation references users, infer posts.author_id to users.id).
+- Ensure that if you add a foreign key column to a table, you also add the corresponding relation mapping into the "relations" list. Do not leave the relations array empty when linkages exist.
+- Response must be ONLY valid JSON matching the structure. No codeblocks, no markdown, no explanation.`;
+
+    const userPrompt = `Here is the Drizzle schema to import:\n\n${drizzleSchema}`;
+
+    let jsonResult = "";
+
+    if (provider === "ollama") {
+      const modelName = model || "gemma4:e4b";
+      const response = await fetch("http://localhost:11434/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: modelName,
+          messages: [
+            { role: "system", content: IMPORT_SYSTEM_PROMPT },
+            { role: "user", content: userPrompt }
+          ],
+          stream: false,
+          format: "json",
+          options: {
+            num_ctx: 16384,
+            num_predict: 8192,
+            temperature: 0.1
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        return Response.json({ error: `Ollama import failed: ${errorText}` }, { status: 500 });
+      }
+
+      const data = await response.json();
+      jsonResult = data.message?.content || "";
+    } else {
+      const modelInstance = getModelInstance(provider, apiKey, model);
+      const { text } = await generateText({
+        model: modelInstance,
+        system: IMPORT_SYSTEM_PROMPT,
+        prompt: userPrompt,
+        temperature: 0.1,
+      });
+      jsonResult = text;
+    }
+
+    let cleaned = jsonResult.trim();
+    if (cleaned.startsWith("```json")) {
+      cleaned = cleaned.substring(7, cleaned.length - 3).trim();
+    } else if (cleaned.startsWith("```")) {
+      cleaned = cleaned.substring(3, cleaned.length - 3).trim();
+    }
+
+    const schemaObj = JSON.parse(cleaned);
+    return Response.json(schemaObj);
+  } catch (error: any) {
+    return Response.json({ error: error.message || "Failed to parse Drizzle schema" }, { status: 500 });
+  }
+}
+
 // Serve static assets in production, otherwise proxy handles api routes
 const server = Bun.serve({
   port: PORT,
@@ -328,6 +543,23 @@ const server = Bun.serve({
     }
     if (url.pathname === "/api/schema/translate" && req.method === "POST") {
       return handleTranslate(req);
+    }
+    if (url.pathname === "/api/schema/import" && req.method === "POST") {
+      return handleImportDrizzle(req);
+    }
+    if (url.pathname === "/api/projects" && req.method === "GET") {
+      return handleGetProjects();
+    }
+    if (url.pathname.startsWith("/api/projects/") && req.method === "GET") {
+      const id = url.pathname.slice("/api/projects/".length);
+      return handleGetProject(id);
+    }
+    if (url.pathname === "/api/projects" && req.method === "POST") {
+      return handleSaveProject(req);
+    }
+    if (url.pathname.startsWith("/api/projects/") && req.method === "DELETE") {
+      const id = url.pathname.slice("/api/projects/".length);
+      return handleDeleteProject(id);
     }
 
     // Static assets fallback for production

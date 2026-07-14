@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { SlidersHorizontal, Sparkles, AlertCircle, Fingerprint, BrainCircuit, HelpCircle, ChevronUp, ChevronDown, Database } from 'lucide-react';
 import type { LLMConfig, DatabaseSchema } from '../types/schema';
+import { toast } from 'sonner';
+
 
 interface SchemaGeneratorPanelProps {
   currentSchema: DatabaseSchema;
@@ -192,6 +194,7 @@ export const SchemaGeneratorPanel: React.FC<SchemaGeneratorPanelProps> = ({
       if (schemaObj && schemaObj.tables) {
         console.log("Parsed LLM Schema:", schemaObj);
         onSchemaGenerated(schemaObj);
+        toast.success("Database schema generated successfully!");
       } else {
         throw new Error('Could not parse schema from the generated text. Try modifying your prompt.');
       }

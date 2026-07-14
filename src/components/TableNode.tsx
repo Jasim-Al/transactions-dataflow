@@ -90,16 +90,14 @@ export const TableNode: React.FC<TableNodeProps> = ({ data }) => {
                 type="target"
                 position={Position.Left}
                 id={`${table.id}-${col.id}-target`}
-                className="!bg-primary hover:!bg-foreground"
-                style={{ left: '-4px' }}
+                className="custom-handle"
               />
               
               <Handle
                 type="source"
                 position={Position.Right}
                 id={`${table.id}-${col.id}-source`}
-                className="!bg-primary hover:!bg-foreground"
-                style={{ right: '-4px' }}
+                className="custom-handle"
               />
 
               {/* View / Edit Form */}
