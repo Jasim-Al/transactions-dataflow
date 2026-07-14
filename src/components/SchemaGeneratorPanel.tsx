@@ -232,7 +232,9 @@ export const SchemaGeneratorPanel: React.FC<SchemaGeneratorPanelProps> = ({
     <div className="flex flex-col h-full w-full bg-transparent overflow-y-auto select-none custom-scrollbar">
       {/* Header */}
       <div 
-        className="p-4 border-b border-border/80 flex items-center justify-between cursor-pointer select-none bg-card/10 hover:bg-card/20 transition-colors"
+        className={`p-4 flex items-center justify-between cursor-pointer select-none bg-card/10 hover:bg-card/20 transition-colors ${
+          isCollapsed ? '' : 'border-b border-border/80'
+        }`}
         onClick={isCollapsed ? onToggleCollapse : undefined}
       >
         {isCollapsed ? (

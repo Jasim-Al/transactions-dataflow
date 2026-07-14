@@ -651,7 +651,9 @@ export default function App() {
         onClick={!isRightPanelOpen ? () => setIsRightPanelOpen(true) : undefined}
       >
         {/* Header */}
-        <div className="p-4 border-b border-border/80 flex items-center justify-between select-none bg-card/10 hover:bg-card/20 transition-colors">
+        <div className={`p-4 flex items-center justify-between select-none bg-card/10 hover:bg-card/20 transition-colors ${
+          isRightPanelOpen ? 'border-b border-border/80' : ''
+        }`}>
           {isRightPanelOpen ? (
             <>
               <div className="flex items-center gap-2">
