@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { Trash2, Plus, Edit2, Check, Settings } from 'lucide-react';
+import { Trash2, Check, Sliders, ListPlus, Pencil, KeyRound } from 'lucide-react';
 import type { Table, Column } from '../types/schema';
 
 interface TableNodeProps {
@@ -59,7 +59,7 @@ export const TableNode: React.FC<TableNodeProps> = ({ data }) => {
               className="text-sm font-semibold text-foreground tracking-wide cursor-pointer hover:text-primary transition-colors flex items-center gap-1.5"
             >
               {table.name}
-              <Edit2 className="w-3.5 h-3.5 text-muted-foreground opacity-50 hover:opacity-100" />
+              <Pencil className="w-3 h-3 text-muted-foreground opacity-50 hover:opacity-100" />
             </span>
           )}
         </div>
@@ -68,7 +68,7 @@ export const TableNode: React.FC<TableNodeProps> = ({ data }) => {
           className="text-muted-foreground hover:text-destructive p-1 rounded-md hover:bg-secondary/80 transition-colors"
           title="Delete Table"
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="w-4 h-4 text-red-500/80 drop-shadow-[0_0_6px_rgba(239,68,68,0.3)]" />
         </button>
       </div>
 
@@ -199,7 +199,8 @@ export const TableNode: React.FC<TableNodeProps> = ({ data }) => {
               ) : (
                 <div className="flex items-center justify-between group">
                   <div className="flex items-center gap-2">
-                    <span className={`text-xs font-medium ${col.primaryKey ? 'text-primary font-semibold' : 'text-foreground'}`}>
+                    <span className={`text-xs font-medium flex items-center gap-1 ${col.primaryKey ? 'text-primary font-semibold' : 'text-foreground'}`}>
+                      {col.primaryKey && <KeyRound className="w-3 h-3 text-amber-400 drop-shadow-[0_0_4px_rgba(251,191,36,0.5)]" />}
                       {col.name}
                     </span>
                     <span className="text-[10px] text-muted-foreground/80 bg-secondary px-1.5 py-0.5 rounded">
@@ -218,10 +219,10 @@ export const TableNode: React.FC<TableNodeProps> = ({ data }) => {
 
                     <button
                       onClick={() => setEditingColumnId(col.id)}
-                      className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary p-0.5 rounded transition-all"
+                      className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary p-0.5 rounded transition-all cursor-pointer"
                       title="Edit Column"
                     >
-                      <Settings className="w-3.5 h-3.5" />
+                      <Sliders className="w-3.5 h-3.5 text-primary/70 hover:text-primary transition-colors" />
                     </button>
                   </div>
                 </div>
@@ -241,9 +242,9 @@ export const TableNode: React.FC<TableNodeProps> = ({ data }) => {
       <div className="px-3 py-2.5 bg-secondary/10 border-t border-border/50 flex items-center justify-center">
         <button
           onClick={() => onAddColumn(table.id)}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors py-1 px-3 w-full justify-center rounded-lg hover:bg-secondary/40 border border-dashed border-border/60 hover:border-primary/40"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors py-1 px-3 w-full justify-center rounded-lg hover:bg-secondary/40 border border-dashed border-border/60 hover:border-primary/40 cursor-pointer"
         >
-          <Plus className="w-3.5 h-3.5" />
+          <ListPlus className="w-3.5 h-3.5 text-primary" />
           Add Column
         </button>
       </div>

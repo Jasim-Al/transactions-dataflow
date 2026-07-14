@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Sparkles, AlertCircle, Key, Cpu, HelpCircle, ChevronUp, ChevronDown, Database } from 'lucide-react';
+import { SlidersHorizontal, Sparkles, AlertCircle, Fingerprint, BrainCircuit, HelpCircle, ChevronUp, ChevronDown, Database } from 'lucide-react';
 import type { LLMConfig, DatabaseSchema } from '../types/schema';
 
 interface SchemaGeneratorPanelProps {
@@ -262,7 +262,7 @@ export const SchemaGeneratorPanel: React.FC<SchemaGeneratorPanelProps> = ({
                 }`}
                 title="LLM Settings"
               >
-                <Settings className="w-4 h-4" />
+                <SlidersHorizontal className="w-4 h-4" />
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); onToggleCollapse(); }}
@@ -282,7 +282,7 @@ export const SchemaGeneratorPanel: React.FC<SchemaGeneratorPanelProps> = ({
           {showSettings && (
             <div className="p-4 bg-secondary/30 border-b border-border/60 space-y-3.5 transition-all">
               <h3 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <Cpu className="w-3.5 h-3.5 text-primary" />
+                <BrainCircuit className="w-3.5 h-3.5 text-primary" />
                 LLM Configurations
               </h3>
 
@@ -318,7 +318,7 @@ export const SchemaGeneratorPanel: React.FC<SchemaGeneratorPanelProps> = ({
               {config.provider !== 'ollama' && (
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block flex items-center gap-1">
-                    <Key className="w-3 h-3 text-amber-500" />
+                    <Fingerprint className="w-3 h-3 text-amber-500" />
                     API Key
                   </label>
                   <input

@@ -15,7 +15,7 @@ import type {
   Node
 } from '@xyflow/react';
 
-import { Database, Plus, Code, Share2, Trash2, Info, ChevronUp, ChevronDown } from 'lucide-react';
+import { Code, Trash2, ChevronUp, ChevronDown, Workflow, Eraser, Compass, FileCode2, PlusCircle } from 'lucide-react';
 import type { DatabaseSchema, Table, Column, Relation, LLMConfig } from './types/schema';
 import { TableNode } from './components/TableNode';
 import { SchemaGeneratorPanel } from './components/SchemaGeneratorPanel';
@@ -551,7 +551,7 @@ export default function App() {
       }`}>
         <div className="flex items-center gap-3">
           <div className="p-2 bg-primary/20 rounded-xl text-primary animate-pulse">
-            <Database className="w-5 h-5" />
+            <Workflow className="w-5 h-5 drop-shadow-[0_0_8px_rgba(243,148,68,0.5)]" />
           </div>
           <div>
             <h1 className="text-sm font-black tracking-wider uppercase text-foreground leading-tight">Relational Dataflow</h1>
@@ -576,7 +576,7 @@ export default function App() {
                 className="text-[10px] px-2 py-0.5 bg-destructive/20 border border-destructive/30 rounded text-destructive hover:bg-destructive/30 transition-all cursor-pointer flex items-center gap-1"
                 title="Delete Relation"
               >
-                <Trash2 className="w-3 h-3" /> Remove
+                <Trash2 className="w-3 h-3 text-red-500 drop-shadow-[0_0_6px_rgba(239,68,68,0.4)]" /> Remove
               </button>
             </div>
           )}
@@ -585,21 +585,21 @@ export default function App() {
             onClick={handleAddTable}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground text-xs font-semibold rounded-xl border border-border transition-all cursor-pointer"
           >
-            <Plus className="w-4 h-4 text-primary" />
+            <PlusCircle className="w-4 h-4 text-primary" />
             Add Table
           </button>
           <button
             onClick={handleClearAll}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground text-xs font-semibold rounded-xl border border-border transition-all cursor-pointer"
           >
-            <Trash2 className="w-4 h-4 text-destructive" />
+            <Eraser className="w-4 h-4 text-destructive" />
             Clear Canvas
           </button>
           <button
             onClick={handleLoadSample}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground text-xs font-semibold rounded-xl border border-border transition-all cursor-pointer"
           >
-            <Info className="w-4 h-4 text-sky-400" />
+            <Compass className="w-4 h-4 text-sky-400" />
             Load Sample
           </button>
           
@@ -609,7 +609,7 @@ export default function App() {
             onClick={() => setIsExportOpen(true)}
             className="flex items-center gap-1.5 px-4 py-1.5 bg-primary text-primary-foreground text-xs font-bold rounded-xl hover:bg-primary/95 transition-all shadow-md shadow-primary/10 cursor-pointer"
           >
-            <Share2 className="w-4 h-4" />
+            <FileCode2 className="w-4 h-4" />
             Export Schema
           </button>
 
