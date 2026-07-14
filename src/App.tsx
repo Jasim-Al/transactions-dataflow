@@ -15,7 +15,7 @@ import type {
   Node
 } from '@xyflow/react';
 
-import { Database, Plus, Code, Share2, Trash2, Info, ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from 'lucide-react';
+import { Database, Plus, Code, Share2, Trash2, Info, ChevronUp, ChevronDown } from 'lucide-react';
 import type { DatabaseSchema, Table, Column, Relation, LLMConfig } from './types/schema';
 import { TableNode } from './components/TableNode';
 import { SchemaGeneratorPanel } from './components/SchemaGeneratorPanel';
@@ -629,19 +629,16 @@ export default function App() {
       {!isLeftPanelOpen && (
         <button
           onClick={() => setIsLeftPanelOpen(true)}
-          className={`fixed ${leftTopClass} left-4 bottom-4 w-12 z-20 glass-panel rounded-2xl cursor-pointer hover:bg-white/5 text-muted-foreground hover:text-foreground transition-all duration-500 flex flex-col items-center justify-center gap-4 py-6 shadow-xl animate-in slide-in-from-left-full`}
+          className="fixed top-0 left-4 px-4 py-1.5 z-30 bg-[#040505]/60 border-b border-x border-white/10 backdrop-blur-md rounded-b-2xl cursor-pointer hover:bg-white/5 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1.5 shadow-lg text-[9px] uppercase font-bold tracking-wider animate-in slide-in-from-top-full duration-300"
           title="Expand Schema Generator"
         >
-          <ChevronRight className="w-5 h-5 text-primary" />
-          <span className="text-[9px] uppercase font-black tracking-widest [writing-mode:vertical-lr] text-muted-foreground/60 select-none">
-            Generator
-          </span>
+          <ChevronDown className="w-3.5 h-3.5 text-primary" /> Generator
         </button>
       )}
 
       {/* Left Sidebar Generator */}
       <div className={`fixed ${leftTopClass} left-4 bottom-4 z-20 w-80 glass-panel rounded-2xl flex flex-col transition-all duration-500 ease-out ${
-        isLeftPanelOpen ? 'translate-x-0 opacity-100' : 'translate-x-[-340px] opacity-0 pointer-events-none'
+        isLeftPanelOpen ? 'translate-y-0 opacity-100' : 'translate-y-[-120%] opacity-0 pointer-events-none'
       }`}>
         <div className="flex-1 min-h-0 overflow-y-auto">
           <SchemaGeneratorPanel 
@@ -662,19 +659,16 @@ export default function App() {
       {!isRightPanelOpen && (
         <button
           onClick={() => setIsRightPanelOpen(true)}
-          className={`fixed ${rightTopClass} right-4 bottom-4 w-12 z-20 glass-panel rounded-2xl cursor-pointer hover:bg-white/5 text-muted-foreground hover:text-foreground transition-all duration-500 flex flex-col items-center justify-center gap-4 py-6 shadow-xl animate-in slide-in-from-right-full`}
+          className="fixed top-0 right-4 px-4 py-1.5 z-30 bg-[#040505]/60 border-b border-x border-white/10 backdrop-blur-md rounded-b-2xl cursor-pointer hover:bg-white/5 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1.5 shadow-lg text-[9px] uppercase font-bold tracking-wider animate-in slide-in-from-top-full duration-300"
           title="Expand Drizzle Preview"
         >
-          <ChevronLeft className="w-5 h-5 text-primary" />
-          <span className="text-[9px] uppercase font-black tracking-widest [writing-mode:vertical-lr] text-muted-foreground/60 select-none">
-            Drizzle Schema
-          </span>
+          <ChevronDown className="w-3.5 h-3.5 text-primary" /> Drizzle Schema
         </button>
       )}
 
       {/* Right Sidebar Drizzle Preview */}
       <div className={`fixed ${rightTopClass} right-4 bottom-4 z-20 w-96 glass-panel rounded-2xl flex flex-col transition-all duration-500 ease-out overflow-hidden ${
-        isRightPanelOpen ? 'translate-x-0 opacity-100' : 'translate-x-[410px] opacity-0 pointer-events-none'
+        isRightPanelOpen ? 'translate-y-0 opacity-100' : 'translate-y-[-120%] opacity-0 pointer-events-none'
       }`}>
         <div className="p-4 border-b border-border/80 flex items-center justify-between bg-[#040505]/40 select-none">
           <div className="flex items-center gap-2">
@@ -690,7 +684,7 @@ export default function App() {
               className="p-1 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               title="Collapse Sidebar"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronUp className="w-4 h-4" />
             </button>
           </div>
         </div>
