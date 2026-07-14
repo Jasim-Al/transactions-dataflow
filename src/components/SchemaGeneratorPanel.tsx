@@ -227,7 +227,7 @@ export const SchemaGeneratorPanel: React.FC<SchemaGeneratorPanelProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-transparent overflow-y-auto select-none">
+    <div className="flex flex-col h-full w-full bg-transparent overflow-y-auto select-none custom-scrollbar">
       {/* Header */}
       <div className="p-4 border-b border-border/80 flex items-center justify-between">
         <div className="flex items-center gap-2">

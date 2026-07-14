@@ -695,7 +695,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="flex-1 p-4 font-mono text-[10px] leading-relaxed text-foreground overflow-y-auto bg-[#040505]/10 select-text scrollbar-thin">
+        <div className="flex-1 p-4 font-mono text-[10px] leading-relaxed text-foreground overflow-y-auto bg-[#040505]/10 select-text custom-scrollbar">
           {drizzleCode ? (
             <pre className="whitespace-pre-wrap">{drizzleCode}</pre>
           ) : (
