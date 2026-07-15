@@ -2,7 +2,7 @@
   "id": "proj_1784031500822",
   "name": "next",
   "createdAt": "2026-07-14T12:18:20.822Z",
-  "updatedAt": "2026-07-14T12:47:06.548Z",
+  "updatedAt": "2026-07-14T12:58:23.471Z",
   "schema": {
     "tables": [
       {
@@ -68,6 +68,15 @@
             "notNull": true,
             "unique": false,
             "isIndex": false
+          },
+          {
+            "id": "col_1784033798506_fk_project_id",
+            "name": "project_id",
+            "type": "integer",
+            "primaryKey": false,
+            "notNull": true,
+            "unique": false,
+            "isIndex": true
           }
         ]
       },
@@ -137,6 +146,15 @@
             "notNull": false,
             "unique": false,
             "isIndex": true
+          },
+          {
+            "id": "col_1784033798506_fk_project_id",
+            "name": "project_id",
+            "type": "integer",
+            "primaryKey": false,
+            "notNull": true,
+            "unique": false,
+            "isIndex": true
           }
         ]
       },
@@ -181,6 +199,39 @@
             "isIndex": true
           }
         ]
+      },
+      {
+        "id": "projects",
+        "name": "projects",
+        "columns": [
+          {
+            "id": "id",
+            "name": "id",
+            "type": "serial",
+            "primaryKey": true,
+            "notNull": true,
+            "unique": false,
+            "isIndex": true
+          },
+          {
+            "id": "name",
+            "name": "name",
+            "type": "varchar",
+            "primaryKey": false,
+            "notNull": true,
+            "unique": false,
+            "isIndex": false
+          },
+          {
+            "id": "description",
+            "name": "description",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": false,
+            "unique": false,
+            "isIndex": false
+          }
+        ]
       }
     ],
     "relations": [
@@ -221,6 +272,22 @@
         "fromTable": "deleted_tasks",
         "fromColumn": "deleted_by_user_id",
         "toTable": "users",
+        "toColumn": "id",
+        "type": "many-to-one"
+      },
+      {
+        "id": "rel_spaces_col_1784033798506_fk_project_id_projects_id",
+        "fromTable": "spaces",
+        "fromColumn": "project_id",
+        "toTable": "projects",
+        "toColumn": "id",
+        "type": "many-to-one"
+      },
+      {
+        "id": "rel_tasks_col_1784033798506_fk_project_id_projects_id",
+        "fromTable": "tasks",
+        "fromColumn": "project_id",
+        "toTable": "projects",
         "toColumn": "id",
         "type": "many-to-one"
       }
@@ -279,7 +346,7 @@
       "type": "table",
       "position": {
         "x": 460,
-        "y": 83.1152295975518
+        "y": 100
       },
       "data": {
         "table": {
@@ -312,23 +379,30 @@
               "notNull": true,
               "unique": false,
               "isIndex": false
+            },
+            {
+              "id": "col_1784033798506_fk_project_id",
+              "name": "project_id",
+              "type": "integer",
+              "primaryKey": false,
+              "notNull": true,
+              "unique": false,
+              "isIndex": true
             }
           ]
         }
       },
       "measured": {
         "width": 322,
-        "height": 251
-      },
-      "selected": false,
-      "dragging": false
+        "height": 296
+      }
     },
     {
       "id": "tasks",
       "type": "table",
       "position": {
-        "x": 840,
-        "y": 100
+        "x": 814.0283528714905,
+        "y": 96.3361574488847
       },
       "data": {
         "table": {
@@ -397,14 +471,25 @@
               "notNull": false,
               "unique": false,
               "isIndex": true
+            },
+            {
+              "id": "col_1784033798506_fk_project_id",
+              "name": "project_id",
+              "type": "integer",
+              "primaryKey": false,
+              "notNull": true,
+              "unique": false,
+              "isIndex": true
             }
           ]
         }
       },
       "measured": {
         "width": 322,
-        "height": 431
-      }
+        "height": 476
+      },
+      "selected": true,
+      "dragging": false
     },
     {
       "id": "deleted_tasks",
@@ -461,6 +546,55 @@
         "width": 322,
         "height": 296
       }
+    },
+    {
+      "id": "projects",
+      "type": "table",
+      "position": {
+        "x": 529.3270012324838,
+        "y": 557.4160203001018
+      },
+      "data": {
+        "table": {
+          "id": "projects",
+          "name": "projects",
+          "columns": [
+            {
+              "id": "id",
+              "name": "id",
+              "type": "serial",
+              "primaryKey": true,
+              "notNull": true,
+              "unique": false,
+              "isIndex": true
+            },
+            {
+              "id": "name",
+              "name": "name",
+              "type": "varchar",
+              "primaryKey": false,
+              "notNull": true,
+              "unique": false,
+              "isIndex": false
+            },
+            {
+              "id": "description",
+              "name": "description",
+              "type": "text",
+              "primaryKey": false,
+              "notNull": false,
+              "unique": false,
+              "isIndex": false
+            }
+          ]
+        }
+      },
+      "measured": {
+        "width": 322,
+        "height": 251
+      },
+      "selected": false,
+      "dragging": false
     }
   ],
   "edges": [
@@ -582,6 +716,62 @@
       "target": "users",
       "sourceHandle": "deleted_tasks-deleted_by_user_id-source",
       "targetHandle": "users-id-target",
+      "type": "smoothstep",
+      "animated": true,
+      "label": "N:1",
+      "selected": false,
+      "labelStyle": {
+        "fill": "hsl(var(--foreground))",
+        "fontSize": 9,
+        "fontWeight": 700
+      },
+      "labelBgPadding": [
+        4,
+        2
+      ],
+      "labelBgBorderRadius": 4,
+      "labelBgStyle": {
+        "fill": "hsl(var(--muted))"
+      },
+      "style": {
+        "stroke": "hsl(var(--muted-foreground))",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "rel_spaces_col_1784033798506_fk_project_id_projects_id",
+      "source": "spaces",
+      "target": "projects",
+      "sourceHandle": "spaces-col_1784033798506_fk_project_id-source",
+      "targetHandle": "projects-id-target",
+      "type": "smoothstep",
+      "animated": true,
+      "label": "N:1",
+      "selected": false,
+      "labelStyle": {
+        "fill": "hsl(var(--foreground))",
+        "fontSize": 9,
+        "fontWeight": 700
+      },
+      "labelBgPadding": [
+        4,
+        2
+      ],
+      "labelBgBorderRadius": 4,
+      "labelBgStyle": {
+        "fill": "hsl(var(--muted))"
+      },
+      "style": {
+        "stroke": "hsl(var(--muted-foreground))",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "rel_tasks_col_1784033798506_fk_project_id_projects_id",
+      "source": "tasks",
+      "target": "projects",
+      "sourceHandle": "tasks-col_1784033798506_fk_project_id-source",
+      "targetHandle": "projects-id-target",
       "type": "smoothstep",
       "animated": true,
       "label": "N:1",
