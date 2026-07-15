@@ -406,13 +406,17 @@ export default function App() {
         isIndex: !!col.isIndex,
       }));
 
+      // Preserve existing visual positions if the table was already on the canvas
+      const existingNode = nodes.find(n => n.id === tableId || (n.data as any)?.table?.name?.toLowerCase() === tableName.toLowerCase());
+      const position = existingNode ? existingNode.position : {
+        x: t.x !== undefined ? t.x : 80 + (idx % 3) * 380,
+        y: t.y !== undefined ? t.y : 100 + Math.floor(idx / 3) * 320
+      };
+
       return {
         id: tableId,
         type: 'table',
-        position: {
-          x: t.x !== undefined ? t.x : 80 + (idx % 3) * 380,
-          y: t.y !== undefined ? t.y : 100 + Math.floor(idx / 3) * 320
-        },
+        position,
         data: {
           table: {
             id: tableId,
@@ -486,7 +490,7 @@ export default function App() {
 
     setNodes(flowNodes);
     setEdges(flowEdges);
-  }, [handleRenameTable, handleDeleteTable, handleAddColumn, handleUpdateColumn, handleDeleteColumn, selectedEdgeId]);
+  }, [nodes, handleRenameTable, handleDeleteTable, handleAddColumn, handleUpdateColumn, handleDeleteColumn, selectedEdgeId]);
 
 
 

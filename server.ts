@@ -74,6 +74,95 @@ Important Instructions:
   * Ensure that if you add a foreign key column to a table, you also add the corresponding relation mapping into the "relations" list. Do not leave the relations array empty when linkages exist.
 - Try to infer indexes on columns that are likely to be queried or used in lookups (e.g. email, username, foreign keys).`;
 
+const MUTATE_SYSTEM_PROMPT = `You are an expert database architect. Your task is to analyze the user's instruction and the current database schema, and generate a list of mutation actions to modify the schema accordingly.
+
+You must respond ONLY with a JSON object matching the following structure. Do not include any explanation, markdown formatting (do not wrap in \`\`\`json), or extra characters outside the JSON object.
+
+Mutation Schema Structure:
+{
+  "actions": [
+    {
+      "type": "addTable",
+      "table": {
+        "name": "table_name",
+        "columns": [
+          {
+            "name": "column_name",
+            "type": "serial" | "integer" | "varchar" | "text" | "boolean" | "timestamp" | "uuid" | "jsonb",
+            "primaryKey": boolean,
+            "notNull": boolean,
+            "unique": boolean,
+            "isIndex": boolean
+          }
+        ]
+      }
+    },
+    {
+      "type": "deleteTable",
+      "tableName": "table_name"
+    },
+    {
+      "type": "renameTable",
+      "oldName": "table_name",
+      "newName": "new_table_name"
+    },
+    {
+      "type": "addColumn",
+      "tableName": "table_name",
+      "column": {
+        "name": "column_name",
+        "type": "serial" | "integer" | "varchar" | "text" | "boolean" | "timestamp" | "uuid" | "jsonb",
+        "primaryKey": boolean,
+        "notNull": boolean,
+        "unique": boolean,
+        "isIndex": boolean
+      }
+    },
+    {
+      "type": "deleteColumn",
+      "tableName": "table_name",
+      "columnName": "column_name"
+    },
+    {
+      "type": "modifyColumn",
+      "tableName": "table_name",
+      "columnName": "column_name",
+      "column": {
+        "name": "new_column_name",
+        "type": "serial" | "integer" | "varchar" | "text" | "boolean" | "timestamp" | "uuid" | "jsonb",
+        "primaryKey": boolean,
+        "notNull": boolean,
+        "unique": boolean,
+        "isIndex": boolean
+      }
+    },
+    {
+      "type": "addRelation",
+      "relation": {
+        "fromTable": "source_table_name",
+        "fromColumn": "source_column_name",
+        "toTable": "target_table_name",
+        "toColumn": "target_column_name",
+        "type": "one-to-one" | "one-to-many" | "many-to-one" | "many-to-many"
+      }
+    },
+    {
+      "type": "deleteRelation",
+      "fromTable": "source_table_name",
+      "fromColumn": "source_column_name",
+      "toTable": "target_table_name",
+      "toColumn": "target_column_name"
+    }
+  ]
+}
+
+Instructions:
+1. Compare the user's instruction with the current schema. Determine the minimal set of actions required to satisfy the instruction.
+2. Output ONLY the "actions" list. Do not include unchanged tables or columns in the output.
+3. If the user instruction requires no changes, output an empty "actions" array.
+4. Ensure target columns exist or are created when adding relations.
+5. All tables/columns must follow PostgreSQL compatibility rules as in the original instructions.`;
+
 function getModelInstance(provider: string, apiKey: string, modelName?: string) {
   if (!apiKey) {
     throw new Error(`API Key is required for provider ${provider}`);
@@ -105,12 +194,12 @@ async function handleGenerate(req: Request): Promise<Response> {
       return Response.json({ error: "Prompt is required" }, { status: 400 });
     }
 
+    let systemPrompt = GENERATE_SYSTEM_PROMPT;
     let userMessageContent = prompt;
     if (currentSchema && currentSchema.tables && currentSchema.tables.length > 0) {
+      systemPrompt = MUTATE_SYSTEM_PROMPT;
       userMessageContent = `Current database schema:\n${JSON.stringify(currentSchema, null, 2)}\n\n` +
-        `User instruction: ${prompt}\n\n` +
-        `IMPORTANT: You MUST preserve all existing tables, columns, types, and relations from the current schema unless the user explicitly requests to modify or delete them. ` +
-        `Ensure any new tables or relations you add connect properly with the existing tables and maintain reference integrity.`;
+        `User instruction: ${prompt}`;
     }
 
     if (provider === "ollama") {
@@ -122,7 +211,7 @@ async function handleGenerate(req: Request): Promise<Response> {
         body: JSON.stringify({
           model: modelName,
           messages: [
-            { role: "system", content: GENERATE_SYSTEM_PROMPT },
+            { role: "system", content: systemPrompt },
             { role: "user", content: userMessageContent }
           ],
           stream: true,
@@ -206,7 +295,7 @@ async function handleGenerate(req: Request): Promise<Response> {
       const modelInstance = getModelInstance(provider, apiKey, model);
       const { textStream } = await streamText({
         model: modelInstance,
-        system: GENERATE_SYSTEM_PROMPT,
+        system: systemPrompt,
         prompt: userMessageContent,
       });
 
