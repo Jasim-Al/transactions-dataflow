@@ -2,7 +2,7 @@
   "id": "proj_1784031500822",
   "name": "next",
   "createdAt": "2026-07-14T12:18:20.822Z",
-  "updatedAt": "2026-07-14T12:58:23.471Z",
+  "updatedAt": "2026-07-15T10:52:14.811Z",
   "schema": {
     "tables": [
       {
@@ -35,48 +35,15 @@
             "notNull": true,
             "unique": true,
             "isIndex": true
-          }
-        ]
-      },
-      {
-        "id": "spaces",
-        "name": "spaces",
-        "columns": [
-          {
-            "id": "id",
-            "name": "id",
-            "type": "serial",
-            "primaryKey": true,
-            "notNull": true,
-            "unique": false,
-            "isIndex": true
           },
           {
-            "id": "user_id",
-            "name": "user_id",
-            "type": "integer",
+            "id": "col_1784110069989_profile_image",
+            "name": "profile_image",
+            "type": "text",
             "primaryKey": false,
-            "notNull": true,
-            "unique": false,
-            "isIndex": true
-          },
-          {
-            "id": "name",
-            "name": "name",
-            "type": "varchar",
-            "primaryKey": false,
-            "notNull": true,
+            "notNull": false,
             "unique": false,
             "isIndex": false
-          },
-          {
-            "id": "col_1784033798506_fk_project_id",
-            "name": "project_id",
-            "type": "integer",
-            "primaryKey": false,
-            "notNull": true,
-            "unique": false,
-            "isIndex": true
           }
         ]
       },
@@ -148,11 +115,20 @@
             "isIndex": true
           },
           {
-            "id": "col_1784033798506_fk_project_id",
+            "id": "project_id",
             "name": "project_id",
             "type": "integer",
             "primaryKey": false,
             "notNull": true,
+            "unique": false,
+            "isIndex": true
+          },
+          {
+            "id": "col_1784111250584",
+            "name": "is_true",
+            "type": "boolean",
+            "primaryKey": false,
+            "notNull": false,
             "unique": false,
             "isIndex": true
           }
@@ -230,27 +206,71 @@
             "notNull": false,
             "unique": false,
             "isIndex": false
+          },
+          {
+            "id": "col_1784110388562_user_id",
+            "name": "user_id",
+            "type": "integer",
+            "primaryKey": false,
+            "notNull": true,
+            "unique": false,
+            "isIndex": true
+          }
+        ]
+      },
+      {
+        "id": "transfered",
+        "name": "transfered",
+        "columns": [
+          {
+            "id": "id",
+            "name": "id",
+            "type": "serial",
+            "primaryKey": true,
+            "notNull": true,
+            "unique": false,
+            "isIndex": true
+          },
+          {
+            "id": "task_id",
+            "name": "task_id",
+            "type": "integer",
+            "primaryKey": false,
+            "notNull": true,
+            "unique": false,
+            "isIndex": true
+          },
+          {
+            "id": "from_user_id",
+            "name": "from_user_id",
+            "type": "integer",
+            "primaryKey": false,
+            "notNull": true,
+            "unique": false,
+            "isIndex": true
+          },
+          {
+            "id": "to_user_id",
+            "name": "to_user_id",
+            "type": "integer",
+            "primaryKey": false,
+            "notNull": true,
+            "unique": false,
+            "isIndex": true
+          },
+          {
+            "id": "transferred_at",
+            "name": "transferred_at",
+            "type": "timestamp",
+            "primaryKey": false,
+            "notNull": true,
+            "unique": false,
+            "isIndex": true
           }
         ]
       }
     ],
     "relations": [
-      {
-        "id": "rel_spaces_user_id_users_id",
-        "fromTable": "spaces",
-        "fromColumn": "user_id",
-        "toTable": "users",
-        "toColumn": "id",
-        "type": "many-to-one"
-      },
-      {
-        "id": "rel_tasks_space_id_spaces_id",
-        "fromTable": "tasks",
-        "fromColumn": "space_id",
-        "toTable": "spaces",
-        "toColumn": "id",
-        "type": "many-to-one"
-      },
       {
         "id": "rel_tasks_user_id_users_id",
         "fromTable": "tasks",
@@ -276,18 +296,42 @@
         "type": "many-to-one"
       },
       {
-        "id": "rel_spaces_col_1784033798506_fk_project_id_projects_id",
-        "fromTable": "spaces",
+        "id": "rel_tasks_project_id_projects_id",
+        "fromTable": "tasks",
         "fromColumn": "project_id",
         "toTable": "projects",
         "toColumn": "id",
         "type": "many-to-one"
       },
       {
-        "id": "rel_tasks_col_1784033798506_fk_project_id_projects_id",
-        "fromTable": "tasks",
-        "fromColumn": "project_id",
-        "toTable": "projects",
+        "id": "rel_transfered_task_id_tasks_id",
+        "fromTable": "transfered",
+        "fromColumn": "task_id",
+        "toTable": "tasks",
+        "toColumn": "id",
+        "type": "many-to-one"
+      },
+      {
+        "id": "rel_transfered_from_user_id_users_id",
+        "fromTable": "transfered",
+        "fromColumn": "from_user_id",
+        "toTable": "users",
+        "toColumn": "id",
+        "type": "many-to-one"
+      },
+      {
+        "id": "rel_transfered_to_user_id_users_id",
+        "fromTable": "transfered",
+        "fromColumn": "to_user_id",
+        "toTable": "users",
+        "toColumn": "id",
+        "type": "many-to-one"
+      },
+      {
+        "id": "rel_projects_user_id_users_id",
+        "fromTable": "projects",
+        "fromColumn": "user_id",
+        "toTable": "users",
         "toColumn": "id",
         "type": "many-to-one"
       }
@@ -298,8 +342,8 @@
       "id": "users",
       "type": "table",
       "position": {
-        "x": 80,
-        "y": 100
+        "x": 153.61532196471012,
+        "y": -85.73218444638846
       },
       "data": {
         "table": {
@@ -332,62 +376,15 @@
               "notNull": true,
               "unique": true,
               "isIndex": true
-            }
-          ]
-        }
-      },
-      "measured": {
-        "width": 322,
-        "height": 251
-      }
-    },
-    {
-      "id": "spaces",
-      "type": "table",
-      "position": {
-        "x": 460,
-        "y": 100
-      },
-      "data": {
-        "table": {
-          "id": "spaces",
-          "name": "spaces",
-          "columns": [
-            {
-              "id": "id",
-              "name": "id",
-              "type": "serial",
-              "primaryKey": true,
-              "notNull": true,
-              "unique": false,
-              "isIndex": true
             },
             {
-              "id": "user_id",
-              "name": "user_id",
-              "type": "integer",
+              "id": "col_1784110069989_profile_image",
+              "name": "profile_image",
+              "type": "text",
               "primaryKey": false,
-              "notNull": true,
-              "unique": false,
-              "isIndex": true
-            },
-            {
-              "id": "name",
-              "name": "name",
-              "type": "varchar",
-              "primaryKey": false,
-              "notNull": true,
+              "notNull": false,
               "unique": false,
               "isIndex": false
-            },
-            {
-              "id": "col_1784033798506_fk_project_id",
-              "name": "project_id",
-              "type": "integer",
-              "primaryKey": false,
-              "notNull": true,
-              "unique": false,
-              "isIndex": true
             }
           ]
         }
@@ -395,14 +392,16 @@
       "measured": {
         "width": 322,
         "height": 296
-      }
+      },
+      "selected": false,
+      "dragging": false
     },
     {
       "id": "tasks",
       "type": "table",
       "position": {
-        "x": 814.0283528714905,
-        "y": 96.3361574488847
+        "x": 856.0581151750977,
+        "y": -106.7482328793814
       },
       "data": {
         "table": {
@@ -473,11 +472,20 @@
               "isIndex": true
             },
             {
-              "id": "col_1784033798506_fk_project_id",
+              "id": "project_id",
               "name": "project_id",
               "type": "integer",
               "primaryKey": false,
               "notNull": true,
+              "unique": false,
+              "isIndex": true
+            },
+            {
+              "id": "col_1784111250584",
+              "name": "is_true",
+              "type": "boolean",
+              "primaryKey": false,
+              "notNull": false,
               "unique": false,
               "isIndex": true
             }
@@ -486,17 +494,16 @@
       },
       "measured": {
         "width": 322,
-        "height": 476
+        "height": 521
       },
-      "selected": true,
-      "dragging": false
+      "selected": false
     },
     {
       "id": "deleted_tasks",
       "type": "table",
       "position": {
-        "x": 80,
-        "y": 420
+        "x": -336.76102689567233,
+        "y": 426.06933534314084
       },
       "data": {
         "table": {
@@ -551,8 +558,8 @@
       "id": "projects",
       "type": "table",
       "position": {
-        "x": 529.3270012324838,
-        "y": 557.4160203001018
+        "x": 887.5211959078389,
+        "y": 684.8497381499988
       },
       "data": {
         "table": {
@@ -585,75 +592,95 @@
               "notNull": false,
               "unique": false,
               "isIndex": false
+            },
+            {
+              "id": "col_1784110388562_user_id",
+              "name": "user_id",
+              "type": "integer",
+              "primaryKey": false,
+              "notNull": true,
+              "unique": false,
+              "isIndex": true
             }
           ]
         }
       },
       "measured": {
         "width": 322,
-        "height": 251
+        "height": 296
+      },
+      "selected": true,
+      "dragging": false
+    },
+    {
+      "id": "transfered",
+      "type": "table",
+      "position": {
+        "x": 415.5595065785764,
+        "y": 616.6256218271654
+      },
+      "data": {
+        "table": {
+          "id": "transfered",
+          "name": "transfered",
+          "columns": [
+            {
+              "id": "id",
+              "name": "id",
+              "type": "serial",
+              "primaryKey": true,
+              "notNull": true,
+              "unique": false,
+              "isIndex": true
+            },
+            {
+              "id": "task_id",
+              "name": "task_id",
+              "type": "integer",
+              "primaryKey": false,
+              "notNull": true,
+              "unique": false,
+              "isIndex": true
+            },
+            {
+              "id": "from_user_id",
+              "name": "from_user_id",
+              "type": "integer",
+              "primaryKey": false,
+              "notNull": true,
+              "unique": false,
+              "isIndex": true
+            },
+            {
+              "id": "to_user_id",
+              "name": "to_user_id",
+              "type": "integer",
+              "primaryKey": false,
+              "notNull": true,
+              "unique": false,
+              "isIndex": true
+            },
+            {
+              "id": "transferred_at",
+              "name": "transferred_at",
+              "type": "timestamp",
+              "primaryKey": false,
+              "notNull": true,
+              "unique": false,
+              "isIndex": true
+            }
+          ]
+        }
+      },
+      "measured": {
+        "width": 322,
+        "height": 341
       },
       "selected": false,
       "dragging": false
     }
   ],
   "edges": [
-    {
-      "id": "rel_spaces_user_id_users_id",
-      "source": "spaces",
-      "target": "users",
-      "sourceHandle": "spaces-user_id-source",
-      "targetHandle": "users-id-target",
-      "type": "smoothstep",
-      "animated": true,
-      "label": "N:1",
-      "selected": false,
-      "labelStyle": {
-        "fill": "hsl(var(--foreground))",
-        "fontSize": 9,
-        "fontWeight": 700
-      },
-      "labelBgPadding": [
-        4,
-        2
-      ],
-      "labelBgBorderRadius": 4,
-      "labelBgStyle": {
-        "fill": "hsl(var(--muted))"
-      },
-      "style": {
-        "stroke": "hsl(var(--muted-foreground))",
-        "strokeWidth": 2
-      }
-    },
-    {
-      "id": "rel_tasks_space_id_spaces_id",
-      "source": "tasks",
-      "target": "spaces",
-      "sourceHandle": "tasks-space_id-source",
-      "targetHandle": "spaces-id-target",
-      "type": "smoothstep",
-      "animated": true,
-      "label": "N:1",
-      "selected": false,
-      "labelStyle": {
-        "fill": "hsl(var(--foreground))",
-        "fontSize": 9,
-        "fontWeight": 700
-      },
-      "labelBgPadding": [
-        4,
-        2
-      ],
-      "labelBgBorderRadius": 4,
-      "labelBgStyle": {
-        "fill": "hsl(var(--muted))"
-      },
-      "style": {
-        "stroke": "hsl(var(--muted-foreground))",
-        "strokeWidth": 2
-      }
-    },
     {
       "id": "rel_tasks_user_id_users_id",
       "source": "tasks",
@@ -739,10 +766,10 @@
       }
     },
     {
-      "id": "rel_spaces_col_1784033798506_fk_project_id_projects_id",
-      "source": "spaces",
+      "id": "rel_tasks_project_id_projects_id",
+      "source": "tasks",
       "target": "projects",
-      "sourceHandle": "spaces-col_1784033798506_fk_project_id-source",
+      "sourceHandle": "tasks-project_id-source",
       "targetHandle": "projects-id-target",
       "type": "smoothstep",
       "animated": true,
@@ -767,11 +794,95 @@
       }
     },
     {
-      "id": "rel_tasks_col_1784033798506_fk_project_id_projects_id",
-      "source": "tasks",
-      "target": "projects",
-      "sourceHandle": "tasks-col_1784033798506_fk_project_id-source",
-      "targetHandle": "projects-id-target",
+      "id": "rel_transfered_task_id_tasks_id",
+      "source": "transfered",
+      "target": "tasks",
+      "sourceHandle": "transfered-task_id-source",
+      "targetHandle": "tasks-id-target",
+      "type": "smoothstep",
+      "animated": true,
+      "label": "N:1",
+      "selected": false,
+      "labelStyle": {
+        "fill": "hsl(var(--foreground))",
+        "fontSize": 9,
+        "fontWeight": 700
+      },
+      "labelBgPadding": [
+        4,
+        2
+      ],
+      "labelBgBorderRadius": 4,
+      "labelBgStyle": {
+        "fill": "hsl(var(--muted))"
+      },
+      "style": {
+        "stroke": "hsl(var(--muted-foreground))",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "rel_transfered_from_user_id_users_id",
+      "source": "transfered",
+      "target": "users",
+      "sourceHandle": "transfered-from_user_id-source",
+      "targetHandle": "users-id-target",
+      "type": "smoothstep",
+      "animated": true,
+      "label": "N:1",
+      "selected": false,
+      "labelStyle": {
+        "fill": "hsl(var(--foreground))",
+        "fontSize": 9,
+        "fontWeight": 700
+      },
+      "labelBgPadding": [
+        4,
+        2
+      ],
+      "labelBgBorderRadius": 4,
+      "labelBgStyle": {
+        "fill": "hsl(var(--muted))"
+      },
+      "style": {
+        "stroke": "hsl(var(--muted-foreground))",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "rel_transfered_to_user_id_users_id",
+      "source": "transfered",
+      "target": "users",
+      "sourceHandle": "transfered-to_user_id-source",
+      "targetHandle": "users-id-target",
+      "type": "smoothstep",
+      "animated": true,
+      "label": "N:1",
+      "selected": false,
+      "labelStyle": {
+        "fill": "hsl(var(--foreground))",
+        "fontSize": 9,
+        "fontWeight": 700
+      },
+      "labelBgPadding": [
+        4,
+        2
+      ],
+      "labelBgBorderRadius": 4,
+      "labelBgStyle": {
+        "fill": "hsl(var(--muted))"
+      },
+      "style": {
+        "stroke": "hsl(var(--muted-foreground))",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "rel_projects_user_id_users_id",
+      "source": "projects",
+      "target": "users",
+      "sourceHandle": "projects-col_1784110388562_user_id-source",
+      "targetHandle": "users-id-target",
       "type": "smoothstep",
       "animated": true,
       "label": "N:1",

@@ -273,7 +273,7 @@ async function handleGenerate(req: Request): Promise<Response> {
                 if (content) {
                   controller.enqueue(encoder.encode(content));
                 }
-              } catch (e) {}
+              } catch (e) { }
             }
           } catch (e) {
             console.error("Ollama stream fetch error:", e);
@@ -475,12 +475,12 @@ async function handleSaveProject(req: Request): Promise<Response> {
 
     const filePath = `${PROJECTS_DIR}/${id}.json`;
     let createdAt = new Date().toISOString();
-    
+
     if (existsSync(filePath)) {
       try {
         const existing = JSON.parse(await readFile(filePath, "utf-8"));
         createdAt = existing.createdAt || createdAt;
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const projectData = {
